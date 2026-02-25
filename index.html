@@ -103,7 +103,7 @@
       <div class="bg-white rounded-2xl p-5 card-shadow">
         <h2 class="text-lg font-bold text-gray-800 mb-4">📝 Pencatat Bulanan (<span id="monthly-user-label">Suami</span>)</h2>
         <div class="flex gap-2 mb-4">
-          <select id="select-month" class="flex-1 p-3 border border-gray-200 rounded-xl text-sm font-semibold bg-gray-50 focus:ring-2 focus:ring-emerald-500 outline-none"></select>
+          <select id="select-month" onchange="handleMonthChange()" class="flex-1 p-3 border border-gray-200 rounded-xl text-sm font-semibold bg-gray-50 focus:ring-2 focus:ring-emerald-500 outline-none"></select>
           <select id="select-year" class="w-24 p-3 border border-gray-200 rounded-xl text-sm font-semibold bg-gray-50 focus:ring-2 focus:ring-emerald-500 outline-none"></select>
         </div>
 
@@ -127,7 +127,12 @@
       <div class="bg-white rounded-2xl p-5 card-shadow">
         <div class="flex justify-between items-center mb-4">
           <h3 class="font-bold text-gray-800 text-lg">💸 Daftar Pengeluaran</h3>
-          <button onclick="addExpenseRow()" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors">+ Tambah</button>
+          <div class="flex gap-2">
+            <button onclick="pullYearlyPlansSafe()" class="bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-sm">
+              🔄 Tarik Rencana
+            </button>
+            <button onclick="addExpenseRow()" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors">+ Tambah</button>
+          </div>
         </div>
         
         <div id="expense-list" class="space-y-3">
@@ -334,18 +339,27 @@
       
       const btnSuami = document.getElementById('btn-suami');
       const btnIstri = document.getElementById('btn-istri');
+      const inputSaldo = document.getElementById('input-saldo');
+      const inputPemasukan = document.getElementById('input-pemasukan');
       
       if(user === 'Suami') {
         btnSuami.className = 'flex-1 text-xs font-bold py-1.5 rounded-md transition-all bg-white text-emerald-700 shadow';
         btnIstri.className = 'flex-1 text-xs font-bold py-1.5 rounded-md transition-all text-emerald-100 hover:text-white';
-        document.getElementById('container-pemasukan').classList.remove('hidden');
-        document.getElementById('monthly-inputs-grid').classList.replace('grid-cols-1', 'grid-cols-2');
+        
+        // Buka akses input untuk Suami
+        inputSaldo.disabled = false;
+        inputPemasukan.disabled = false;
+        inputSaldo.classList.remove('bg-gray-200', 'text-gray-500', 'cursor-not-allowed');
+        inputPemasukan.classList.remove('bg-gray-200', 'text-gray-500', 'cursor-not-allowed');
       } else {
         btnIstri.className = 'flex-1 text-xs font-bold py-1.5 rounded-md transition-all bg-white text-emerald-700 shadow';
         btnSuami.className = 'flex-1 text-xs font-bold py-1.5 rounded-md transition-all text-emerald-100 hover:text-white';
-        document.getElementById('container-pemasukan').classList.add('hidden');
-        document.getElementById('monthly-inputs-grid').classList.replace('grid-cols-2', 'grid-cols-1');
-        document.getElementById('input-pemasukan').value = ''; // Reset input
+        
+        // Kunci input untuk Istri, hanya lihat total dana yang diisi Suami
+        inputSaldo.disabled = true;
+        inputPemasukan.disabled = true;
+        inputSaldo.classList.add('bg-gray-200', 'text-gray-500', 'cursor-not-allowed');
+        inputPemasukan.classList.add('bg-gray-200', 'text-gray-500', 'cursor-not-allowed');
       }
       calculateMonthly();
     };
@@ -491,10 +505,81 @@
       });
     };
 
+    // --- PULL YEARLY TO MONTHLY LOGIC ---
+    const handleMonthChange = (isInit = false) => {
+      const selectedMonth = Number(document.getElementById('select-month').value);
+      const plansForMonth = yearlyPlans.filter(p => p.months.includes(selectedMonth));
+      
+      // Jika diganti manual oleh user, reset input saldo & pemasukan
+      if (!isInit) {
+        document.getElementById('input-saldo').value = '';
+        if(document.getElementById('input-pemasukan')) document.getElementById('input-pemasukan').value = '';
+        monthlySavings = [];
+        renderMonthlySavings();
+      }
+
+      // Susun ulang daftar pengeluaran berdasarkan rencana
+      expenses = plansForMonth.map((plan, idx) => ({
+        id: Date.now() + idx,
+        name: plan.name,
+        category: plan.category || categoriesList[0],
+        planned: plan.amount,
+        actual: ''
+      }));
+      
+      // Tambah baris kosong di bawah
+      expenses.push({ id: Date.now() + 10000, name: '', category: categoriesList[0], planned: '', actual: '' });
+      
+      renderExpenses();
+      calculateMonthly();
+      if(!isInit) showToast(`Bulan diubah. Rencana ditarik otomatis.`);
+    };
+
+    const pullYearlyPlansSafe = () => {
+      const selectedMonth = Number(document.getElementById('select-month').value);
+      const plansForMonth = yearlyPlans.filter(p => p.months.includes(selectedMonth));
+      
+      let addedCount = 0;
+      plansForMonth.forEach((plan, idx) => {
+        // Cek apakah rencana ini sudah ada di daftar (berdasarkan nama)
+        const exists = expenses.find(e => e.name.toLowerCase() === plan.name.toLowerCase());
+        if (!exists) {
+          // Jika belum ada, masukkan ke urutan atas
+          expenses.unshift({ 
+            id: Date.now() + idx, 
+            name: plan.name, 
+            category: plan.category || categoriesList[0], 
+            planned: plan.amount, 
+            actual: '' 
+          });
+          addedCount++;
+        } else {
+          // Jika sudah ada, cukup update nilai rencananya agar sinkron
+          exists.planned = plan.amount;
+          exists.category = plan.category || exists.category;
+        }
+      });
+      
+      // Bersihkan baris kosong ganda, pastikan sisa 1 di bawah
+      expenses = expenses.filter(e => e.name.trim() !== '' || e.planned !== '' || e.actual !== '');
+      expenses.push({ id: Date.now() + 10000, name: '', category: categoriesList[0], planned: '', actual: '' });
+      
+      renderExpenses();
+      calculateMonthly();
+      showToast(addedCount > 0 ? `✅ ${addedCount} Rencana ditarik!` : `✅ Data sudah tersinkronisasi`);
+    };
+
     // --- MONTHLY LOGIC ---
     const renderExpenses = () => {
       const list = document.getElementById('expense-list');
-      list.innerHTML = expenses.map((exp) => `
+      list.innerHTML = expenses.map((exp) => {
+        // Kalkulasi sisa plan vs aktual per item
+        const plannedVal = Number(exp.planned) || 0;
+        const actualVal = Number(exp.actual) || 0;
+        const sisaVal = plannedVal - actualVal;
+        const sisaColor = sisaVal >= 0 ? 'text-emerald-600' : 'text-red-600';
+
+        return `
         <div class="bg-gray-50 border border-gray-100 rounded-xl p-3 space-y-2">
           <div class="flex justify-between items-center">
             <input type="text" value="${exp.name}" oninput="updateExpense(${exp.id}, 'name', this.value)" placeholder="Nama pengeluaran..." class="flex-1 bg-transparent font-bold text-gray-800 focus:outline-none placeholder-gray-400">
@@ -520,8 +605,14 @@
               <input type="number" value="${exp.actual}" oninput="updateExpense(${exp.id}, 'actual', this.value)" placeholder="0" class="w-full p-2 bg-white border border-red-100 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-red-400 outline-none text-red-600">
             </div>
           </div>
+          
+          <!-- INDIKATOR KONTROL SISA BUDGET -->
+          <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-200 border-dashed">
+            <span class="text-[10px] uppercase font-bold text-gray-500">Sisa Plan Ini</span>
+            <span class="text-xs font-extrabold ${sisaColor}">${formatRp(sisaVal)}</span>
+          </div>
         </div>
-      `).join('');
+      `}).join('');
     };
 
     const addExpenseRow = () => {
@@ -555,6 +646,12 @@
       list.innerHTML = monthlySavings.map(ms => {
         const goalOptions = savingsGoals.map(g => `<option value="${g.id}" ${ms.goalId == g.id ? 'selected' : ''}>${g.name}</option>`).join('');
         
+        // Kalkulasi sisa plan vs aktual per item tabungan
+        const plannedVal = Number(ms.planned) || 0;
+        const actualVal = Number(ms.actual) || 0;
+        const sisaVal = plannedVal - actualVal;
+        const sisaColor = sisaVal >= 0 ? 'text-blue-600' : 'text-red-600';
+
         return `
           <div class="bg-blue-50/50 border border-blue-100 rounded-xl p-3 space-y-2">
             <div class="flex justify-between items-center">
@@ -575,6 +672,12 @@
                 <label class="text-[10px] uppercase font-bold text-blue-400 tracking-wider">Aktual</label>
                 <input type="number" value="${ms.actual}" oninput="updateMonthlySaving(${ms.id}, 'actual', this.value)" placeholder="0" class="w-full p-2 bg-white border border-blue-200 rounded-lg text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none text-blue-600">
               </div>
+            </div>
+            
+            <!-- INDIKATOR KONTROL SISA BUDGET -->
+            <div class="flex justify-between items-center mt-2 pt-2 border-t border-blue-200 border-dashed">
+              <span class="text-[10px] uppercase font-bold text-blue-500">Sisa Plan Ini</span>
+              <span class="text-xs font-extrabold ${sisaColor}">${formatRp(sisaVal)}</span>
             </div>
           </div>
         `;
@@ -603,7 +706,7 @@
 
     const calculateMonthly = () => {
       const saldo = Number(document.getElementById('input-saldo').value) || 0;
-      const pemasukan = currentUser === 'Suami' ? (Number(document.getElementById('input-pemasukan').value) || 0) : 0;
+      const pemasukan = Number(document.getElementById('input-pemasukan').value) || 0;
       
       const totalAvailable = saldo + pemasukan;
       
@@ -888,8 +991,11 @@
       [now.getFullYear()-1, now.getFullYear(), now.getFullYear()+1].forEach(y => ySel.innerHTML += `<option value="${y}" ${y === now.getFullYear() ? 'selected' : ''}>${y}</option>`);
 
       renderDashboard(); // Memanggil render grafik di awal
-      renderExpenses();
-      renderMonthlySavings(); // Tambahkan inisialisasi ini
+      
+      // Menginisiasi daftar pengeluaran sekaligus menarik rencana bulan ini
+      handleMonthChange(true); 
+      
+      renderMonthlySavings(); 
       renderSavings();
       renderYearly();
     };
