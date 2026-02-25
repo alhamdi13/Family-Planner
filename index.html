@@ -23,7 +23,6 @@
 </head>
 <body class="h-screen flex flex-col max-w-md mx-auto relative shadow-2xl overflow-hidden bg-gray-50">
 
-  <!-- Header -->
   <header class="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white p-4 shadow-lg flex-shrink-0 z-10">
     <div class="flex justify-between items-center">
         <h1 class="text-lg font-bold">💰 Budget Keluarga</h1>
@@ -34,7 +33,6 @@
     </div>
   </header>
 
-  <!-- Navigation -->
   <nav class="flex gap-1 p-2 bg-white shadow-sm flex-shrink-0 border-b border-gray-100" id="nav-tabs">
     <button onclick="switchTab('dashboard')" class="tab-btn flex-1 py-3 rounded-xl text-xs font-bold transition-all bg-gradient-to-br from-emerald-600 to-emerald-500 text-white shadow-md" data-tab="dashboard">📊 DASHBOARD</button>
     <button onclick="switchTab('monthly')" class="tab-btn flex-1 py-3 rounded-xl text-xs font-bold transition-all bg-gray-100 text-gray-500" data-tab="monthly">📝 BULANAN</button>
@@ -42,10 +40,8 @@
     <button onclick="switchTab('yearly')" class="tab-btn flex-1 py-3 rounded-xl text-xs font-bold transition-all bg-gray-100 text-gray-500" data-tab="yearly">📅 PLAN</button>
   </nav>
 
-  <!-- Main Content -->
   <main class="flex-1 overflow-y-auto scroll-hide p-4 pb-24 relative">
     
-    <!-- PAGE: DASHBOARD -->
     <div id="page-dashboard" class="page-content animate-fade-in space-y-4">
       <div id="dash-loading" class="hidden text-center py-2"><p class="text-[10px] font-bold text-emerald-600 animate-pulse uppercase tracking-widest">🔄 Sinkronisasi Data Cloud...</p></div>
       
@@ -87,9 +83,7 @@
       </div>
     </div>
 
-    <!-- PAGE: MONTHLY -->
     <div id="page-monthly" class="page-content hidden animate-fade-in space-y-4">
-      <!-- Periode & Saldo -->
       <div class="bg-white rounded-2xl p-5 card-shadow space-y-4">
         <div class="flex gap-2">
           <select id="select-month" onchange="handleMonthChange()" class="flex-1 p-2.5 border rounded-xl text-xs font-bold bg-gray-50"></select>
@@ -114,7 +108,6 @@
         </div>
       </div>
 
-      <!-- Quick Transaction -->
       <div class="bg-emerald-600 rounded-2xl p-5 text-white shadow-xl">
         <h3 class="font-extrabold text-[10px] mb-3 uppercase tracking-widest">🖊️ Input Pengeluaran Cepat</h3>
         <div class="space-y-3">
@@ -130,7 +123,6 @@
         </div>
       </div>
 
-      <!-- Monitoring Anggaran -->
       <div class="bg-white rounded-2xl p-5 card-shadow">
         <div class="flex justify-between items-center mb-4">
             <h3 class="font-extrabold text-gray-600 text-[10px] uppercase tracking-widest">Monitor Sisa Plan</h3>
@@ -138,9 +130,13 @@
         </div>
         <div id="monitoring-list" class="space-y-4"></div>
       </div>
+      
+      <div class="flex gap-2">
+        <button onclick="downloadReport()" class="flex-1 bg-white border-2 border-gray-200 text-gray-600 py-4 rounded-2xl text-xs font-bold flex items-center justify-center gap-1">📸 Foto</button>
+        <button onclick="handleSaveMonthly()" class="flex-[3] bg-emerald-600 text-white py-4 rounded-2xl text-lg font-extrabold shadow-lg">💾 Simpan Kas</button>
+      </div>
     </div>
 
-    <!-- PAGE: SAVINGS -->
     <div id="page-savings" class="page-content hidden animate-fade-in space-y-4">
       <div class="bg-white rounded-2xl p-5 card-shadow">
         <div class="flex justify-between items-center mb-5"><h2 class="text-sm font-bold text-gray-800">🎯 TARGET TABUNGAN</h2><button onclick="openSavingsModal()" class="bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg text-xs font-bold">+ BARU</button></div>
@@ -148,7 +144,6 @@
       </div>
     </div>
 
-    <!-- PAGE: YEARLY -->
     <div id="page-yearly" class="page-content hidden animate-fade-in space-y-4">
       <div class="bg-white rounded-2xl p-5 card-shadow">
         <div class="flex justify-between items-center mb-5"><h2 class="text-sm font-bold text-gray-800">📅 PLAN TAHUNAN</h2><button onclick="openYearlyModal()" class="bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg text-xs font-bold">+ BARU</button></div>
@@ -157,7 +152,6 @@
       <button onclick="saveYearlyData()" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-extrabold shadow-lg">💾 SINKRONISASI KE CLOUD</button>
     </div>
 
-    <!-- PAGE: SEARCH -->
     <div id="page-search" class="page-content hidden animate-fade-in space-y-4">
       <div class="bg-white rounded-2xl p-5 card-shadow min-h-[50vh]">
         <h2 class="text-sm font-bold text-gray-800 mb-4">🔍 CARI RIWAYAT</h2>
@@ -167,10 +161,8 @@
     </div>
   </main>
 
-  <!-- TOAST MESSAGE -->
   <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-5 py-3 rounded-full shadow-2xl text-xs font-bold z-[60] animate-toast"><span id="toast-msg"></span></div>
 
-  <!-- MODALS -->
   <div id="modal-savings" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end justify-center z-50">
     <div class="bg-white w-full max-w-md rounded-t-3xl p-6 shadow-2xl animate-slide-up">
       <h3 class="text-lg font-extrabold text-gray-800 mb-5 uppercase tracking-tighter">➕ Tabungan Baru</h3>
@@ -223,8 +215,6 @@
 
     const setCurrentUser = (u) => {
       currentUser = u;
-      const label = document.getElementById('monthly-user-label');
-      if(label) label.innerText = u;
       const isS = u === 'Suami';
       const btnS = document.getElementById('btn-suami');
       const btnI = document.getElementById('btn-istri');
@@ -236,7 +226,6 @@
       if(inputPem) inputPem.disabled = !isS;
     };
 
-    // SINKRONISASI CLOUD UTAMA
     const fetchActualsFromCloud = async (silent = false) => {
       const m = document.getElementById('select-month')?.value;
       const y = document.getElementById('select-year')?.value;
@@ -244,29 +233,28 @@
       
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+        const timeoutId = setTimeout(() => controller.abort(), 12000); 
         
-        const response = await fetch(`${SCRIPT_URL}?action=getActualSpending&month=${m}&year=${y}`, {
+        const timestamp = Date.now();
+        const response = await fetch(`${SCRIPT_URL}?action=getActualSpending&month=${m}&year=${y}&t=${timestamp}`, {
             signal: controller.signal
         });
         
         clearTimeout(timeoutId);
 
-        if (!response.ok) throw new Error("Cloud Response Not OK");
+        if (!response.ok) throw new Error("Network error");
         
         const data = await response.json();
         actualsCache = data.categoryTotals || {};
         currentMonthIncome = data.totalIncome || 0;
         
-        // Simpan cache lokal jika offline
         localStorage.setItem(`cache_actual_${y}_${m}`, JSON.stringify(actualsCache));
         localStorage.setItem(`cache_income_${y}_${m}`, currentMonthIncome);
         
         renderMonitoringList();
         renderDashboard();
       } catch (e) {
-        console.warn("Gagal sinkron cloud, menggunakan data lokal...");
-        // Fallback ke data lokal jika gagal tarik cloud
+        console.warn("Menggunakan data lokal");
         actualsCache = JSON.parse(localStorage.getItem(`cache_actual_${y}_${m}`)) || {};
         currentMonthIncome = Number(localStorage.getItem(`cache_income_${y}_${m}`)) || 0;
         renderMonitoringList();
@@ -290,10 +278,10 @@
             if(inputSaldo) {
                 inputSaldo.value = sisa > 0 ? sisa : 0;
                 calculateMonthly();
-                showToast('✅ Saldo ditarik dari sisa bulan lalu');
+                showToast('✅ Saldo ditarik');
             }
         } else {
-            showToast('⚠️ Data bulan lalu tidak ditemukan');
+            showToast('⚠️ Data bulan lalu kosong');
         }
     };
 
@@ -307,7 +295,7 @@
       const plansForMonth = yearlyPlans.filter(p => p.months.includes(m));
       let html = '';
       if(plansForMonth.length === 0) {
-        html = '<p class="text-center text-[10px] text-gray-400 font-bold py-4 uppercase">Belum ada rencana bulan ini.</p>';
+        html = '<p class="text-center text-[10px] text-gray-400 font-bold py-4 uppercase">Belum ada rencana</p>';
       } else {
         plansForMonth.forEach(p => {
           const act = actualsCache[p.name] || 0;
@@ -347,17 +335,17 @@
       const [jenis, kategori] = catVal.split('|');
       const m = document.getElementById('select-month').value;
       const y = document.getElementById('select-year').value;
-      const tgl = new Date().toISOString().split('T')[0];
+      const monthStr = (Number(m) + 1).toString().padStart(2, '0');
+      const tgl = `${y}-${monthStr}-01`; 
 
       showToast('⏳ Mencatat...');
       
-      // Update UI lokal supaya instan
       actualsCache[kategori] = (actualsCache[kategori] || 0) + nominal;
       renderMonitoringList();
       renderDashboard();
 
       try {
-        const resp = await fetch(SCRIPT_URL, {
+        await fetch(SCRIPT_URL, {
           method: 'POST', mode: 'no-cors',
           body: JSON.stringify({ tanggal: tgl, pengguna: currentUser, jenis: jenis, kategori: kategori, nominal: nominal, keterangan: "Web App" })
         });
@@ -365,11 +353,34 @@
         if(quickNom) quickNom.value = '';
         showToast('✅ Berhasil Disimpan!');
         
-        // Tarik data ulang untuk validasi
         setTimeout(() => fetchActualsFromCloud(true), 2000);
       } catch (e) { 
-        showToast('❌ Error Cloud (Lokal Tersimpan)'); 
+        showToast('❌ Error Cloud'); 
       }
+    };
+
+    const handleSaveMonthly = async () => {
+      showToast('⏳ Menyimpan kas...');
+      const mS = document.getElementById('select-month')?.value;
+      const yS = document.getElementById('select-year')?.value;
+      const pem = document.getElementById('input-pemasukan')?.value;
+      const sal = document.getElementById('input-saldo')?.value;
+      const monthStr = (Number(mS) + 1).toString().padStart(2, '0');
+      const tgl = `${yS}-${monthStr}-01`;
+
+      try {
+        if (currentUser === 'Suami' && Number(pem) > 0) {
+           await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ tanggal: tgl, pengguna: currentUser, jenis: 'Pemasukan', kategori: 'Gaji', nominal: pem, keterangan: `Periode: ${monthNames[mS]} ${yS}` }) });
+        }
+        
+        const totalSpentMonth = Object.values(actualsCache).reduce((s,v)=>s+v, 0);
+        let history = JSON.parse(localStorage.getItem('monthlyHistory') || '{}');
+        history[`${yS}_${mS}`] = { income: Number(sal)+Number(pem), expense: totalSpentMonth };
+        localStorage.setItem('monthlyHistory', JSON.stringify(history));
+        
+        renderDashboard();
+        showToast('✅ Kas Tersimpan!');
+      } catch (e) { showToast('❌ Gagal Kas'); }
     };
 
     const renderDashboard = () => {
@@ -389,10 +400,8 @@
       const pms = Number(document.getElementById('input-pemasukan')?.value) || 0;
       const totalInMonth = saldo + pms;
       
-      // Update Histori Lokal
       let history = JSON.parse(localStorage.getItem('monthlyHistory') || '{}');
       history[`${y}_${m}`] = { income: totalInMonth, expense: totalSpentMonth };
-      localStorage.setItem('monthlyHistory', JSON.stringify(history));
 
       let tyi = 0, tye = 0, amc = 0, ti = [], te = [], html = '';
       for (let i = 0; i < 12; i++) {
@@ -412,22 +421,13 @@
       if(totalPemEl) totalPemEl.innerText = formatRp(tyi);
       if(totalPengEl) totalPengEl.innerText = formatRp(tye);
       if(totalSisaEl) totalSisaEl.innerText = formatRp(totalInMonth - totalSpentMonth);
-      if(monthsListEl) monthsListEl.innerHTML = html || '<p class="text-center text-[10px] text-gray-400 py-4 font-bold uppercase">Belum ada histori transaksi.</p>';
+      if(monthsListEl) monthsListEl.innerHTML = html || '<p class="text-center text-[10px] text-gray-400 py-4 font-bold uppercase">Belum ada histori.</p>';
 
       const ctxT = document.getElementById('trendChart');
       if (ctxT) {
         if (trendChartInstance) trendChartInstance.destroy();
         trendChartInstance = new Chart(ctxT, { type: 'line', data: { labels: monthShort, datasets: [{ label: 'In', data: ti, borderColor: '#10b981', tension: 0.3, pointRadius: 2 }, { label: 'Out', data: te, borderColor: '#ef4444', tension: 0.3, pointRadius: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { grid: { display: false }, ticks: { font: { size: 8 } } } } } });
       }
-
-      let typ = 0; yearlyPlans.forEach(p => typ += (p.amount * p.months.length));
-      const yearlyPercentEl = document.getElementById('dash-yearly-percent');
-      const yearlyBarEl = document.getElementById('dash-yearly-bar');
-      const yearlySisaEl = document.getElementById('dash-yearly-sisa');
-      
-      if(yearlyPercentEl) yearlyPercentEl.innerText = `${(typ > 0 ? (tye / typ) * 100 : 0).toFixed(1)}%`;
-      if(yearlyBarEl) yearlyBarEl.style.width = `${Math.min((typ > 0 ? (tye / typ) * 100 : 0), 100)}%`;
-      if(yearlySisaEl) yearlySisaEl.innerText = formatRp(typ - tye);
 
       const labels = Object.keys(actualsCache);
       const dataValues = Object.values(actualsCache);
@@ -515,16 +515,15 @@
         }catch(e){ showToast('❌ Gagal Cloud'); } 
     };
 
-    const performSearch = () => {
-      const q = document.getElementById('search-input')?.value.toLowerCase();
-      const resultsDiv = document.getElementById('search-results');
-      if (!q || q.length < 2) { if(resultsDiv) resultsDiv.innerHTML = '<p class="text-center text-gray-400 text-[10px] mt-8 font-bold uppercase">Ketik untuk mencari riwayat...</p>'; return; }
-      
-      const history = JSON.parse(localStorage.getItem('monthlyHistory') || '{}');
-      // Untuk pencarian lebih detail perlu InputData dari cloud, sementara cari di histori lokal bulan
-      let found = [];
-      // (Logika pencarian sederhana berdasarkan bulan yang ada di histori)
-      if(resultsDiv) resultsDiv.innerHTML = '<p class="text-center text-gray-400 text-[10px] mt-8 font-bold uppercase tracking-widest">Fitur pencarian cloud segera hadir.</p>';
+    const performSearch = () => {};
+
+    const downloadReport = async () => {
+      showToast('⏳ Menyiapkan...');
+      const r = document.createElement('div'); r.className = 'bg-white p-6 w-[400px] fixed top-0 -left-[2000px] rounded-2xl';
+      const s = document.getElementById('total-tersedia')?.innerText;
+      const a = formatRp(Object.values(actualsCache).reduce((sum,v)=>sum+v, 0));
+      r.innerHTML = `<div class="bg-emerald-600 rounded-xl p-5 text-white mb-5 text-center font-bold">Laporan Bulanan</div><div class="flex justify-between border-b py-2"><span class="text-gray-500">Tersedia</span><span class="font-bold text-emerald-600">${s}</span></div><div class="flex justify-between border-b py-2"><span class="text-gray-500">Terpakai</span><span class="font-bold text-red-500">${a}</span></div>`;
+      document.body.appendChild(r); const c = await html2canvas(r, { scale: 2 }); document.body.removeChild(r); const l = document.createElement('a'); l.download = 'Laporan.png'; l.href = c.toDataURL(); l.click(); showToast('✅ Diunduh!');
     };
 
     window.onload = () => {
