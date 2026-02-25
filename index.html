@@ -5,8 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Perencana Keuangan Keluarga</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Menambahkan Chart.js untuk Grafik Donat -->
+  <!-- Menambahkan Chart.js untuk Grafik -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Menambahkan html2canvas untuk Ekspor Laporan Gambar -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -58,6 +61,9 @@
     <button onclick="switchTab('yearly')" class="tab-btn flex-1 min-w-max px-4 py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 bg-gray-100 text-gray-500 hover:bg-gray-200" data-tab="yearly">
       <span>📅</span> Tahunan
     </button>
+    <button onclick="switchTab('search')" class="tab-btn flex-1 min-w-max px-4 py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 bg-gray-100 text-gray-500 hover:bg-gray-200" data-tab="search">
+      <span>🔍</span> Riwayat
+    </button>
   </nav>
 
   <!-- Main Content Area -->
@@ -83,6 +89,42 @@
         </div>
       </div>
 
+      <!-- GRAFIK TREN (GARIS) TAHUNAN -->
+      <div class="bg-white rounded-2xl p-5 card-shadow">
+        <h3 class="font-semibold text-gray-800 mb-4">📈 Tren Arus Kas</h3>
+        <div class="relative w-full h-48 mb-2">
+          <canvas id="trendChart"></canvas>
+        </div>
+      </div>
+
+      <!-- REALISASI BUDGET TAHUNAN -->
+      <div class="bg-white rounded-2xl p-5 card-shadow">
+        <h3 class="font-semibold text-gray-800 mb-4">🎯 Realisasi Budget Tahunan</h3>
+        <div class="mb-4">
+          <div class="flex justify-between text-xs font-bold mb-1.5">
+            <span class="text-gray-400 uppercase tracking-wider">Terserap</span>
+            <span id="dash-yearly-percent" class="text-emerald-600">0%</span>
+          </div>
+          <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
+            <div id="dash-yearly-bar" class="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-1000" style="width: 0%"></div>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3 text-center">
+          <div class="bg-gray-50 rounded-xl p-3 border border-gray-100">
+            <p class="text-[10px] uppercase font-bold text-gray-400 mb-1">Total Rencana</p>
+            <p id="dash-yearly-plan" class="font-extrabold text-gray-700 text-sm">Rp 0</p>
+          </div>
+          <div class="bg-white rounded-xl p-3 border border-gray-200">
+            <p class="text-[10px] uppercase font-bold text-gray-400 mb-1">Total Aktual</p>
+            <p id="dash-yearly-actual" class="font-extrabold text-red-600 text-sm">Rp 0</p>
+          </div>
+        </div>
+        <div class="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center">
+          <span class="text-xs font-bold text-gray-500 uppercase tracking-wide">Sisa Budget Tahunan</span>
+          <span id="dash-yearly-sisa" class="text-sm font-extrabold text-emerald-600">Rp 0</span>
+        </div>
+      </div>
+
       <!-- GRAFIK DONAT KATEGORI -->
       <div class="bg-white rounded-2xl p-5 card-shadow">
         <h3 class="font-semibold text-gray-800 mb-4">🍩 Pengeluaran Bulan Ini</h3>
@@ -95,7 +137,7 @@
       </div>
 
       <div class="bg-white rounded-2xl p-5 card-shadow">
-        <h3 class="font-semibold text-gray-800 mb-3">📈 Rekap Per Bulan (Histori)</h3>
+        <h3 class="font-semibold text-gray-800 mb-3">📋 Rekap Per Bulan</h3>
         <div class="space-y-2" id="dash-months">
           <!-- Rendered via JS -->
         </div>
@@ -173,9 +215,14 @@
         </div>
       </div>
 
-      <button onclick="handleSaveMonthly()" class="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 text-white py-4 rounded-2xl text-lg font-bold shadow-lg shadow-emerald-200 hover:shadow-xl transition-all">
-        💾 Simpan Data Bulanan
-      </button>
+      <div class="flex gap-2">
+        <button onclick="downloadReport()" class="flex-1 bg-white border-2 border-emerald-500 text-emerald-600 py-4 rounded-2xl text-sm font-bold shadow-sm hover:bg-emerald-50 transition-all flex items-center justify-center gap-2">
+          📸 Unduh Laporan
+        </button>
+        <button onclick="handleSaveMonthly()" class="flex-[2] bg-gradient-to-r from-emerald-600 to-emerald-500 text-white py-4 rounded-2xl text-lg font-bold shadow-lg shadow-emerald-200 hover:shadow-xl transition-all">
+          💾 Simpan Data
+        </button>
+      </div>
     </div>
 
     <!-- PAGE: SAVINGS -->
@@ -207,6 +254,20 @@
         💾 Simpan Rencana Tahunan
       </button>
     </div>
+
+    <!-- PAGE: SEARCH -->
+    <div id="page-search" class="page-content hidden animate-fade-in space-y-4">
+      <div class="bg-white rounded-2xl p-5 card-shadow min-h-[50vh]">
+        <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">🔍 Cari Riwayat Transaksi</h2>
+        <p class="text-xs text-gray-500 mb-3">Cari pengeluaran lama berdasarkan nama barang atau kategori.</p>
+        <input type="text" id="search-input" oninput="performSearch()" placeholder="Ketik minimal 2 huruf..." class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-bold text-sm focus:ring-2 focus:ring-emerald-500 outline-none mb-4">
+        
+        <div id="search-results" class="space-y-3">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <!-- TOAST -->
@@ -279,40 +340,27 @@
     const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
     const monthShort = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
     
-    // Daftar Kategori Standar
     const categoriesList = [
-      'Makanan & Minuman', 
-      'Transportasi (Bensin/Tol)', 
-      'Tagihan Rumah (Listrik/Air)', 
-      'Pendidikan & Anak', 
-      'Pakaian & Perawatan', 
-      'Hiburan & Liburan', 
-      'Cicilan & Utang',
-      'Lainnya'
+      'Makanan & Minuman', 'Transportasi (Bensin/Tol)', 'Tagihan Rumah (Listrik/Air)', 
+      'Pendidikan & Anak', 'Pakaian & Perawatan', 'Hiburan & Liburan', 'Cicilan & Utang', 'Lainnya'
     ];
     const categoryColors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#64748b', '#cbd5e1'];
     
     let chartInstance = null;
+    let trendChartInstance = null;
     let currentUser = 'Suami';
     let expenses = [{ id: Date.now(), name: '', category: categoriesList[0], planned: '', actual: '' }];
-    let monthlySavings = []; // State baru untuk tabungan bulanan
+    let monthlySavings = []; 
     
-    // Tarik data tabungan dari penyimpanan lokal
     const savedSavings = localStorage.getItem('savingsData');
     let savingsGoals = savedSavings ? JSON.parse(savedSavings) : [
       { id: 1, name: 'Jepang', target: 24000000, collected: 5150000 },
-      { id: 2, name: 'Umrah', target: 30000000, collected: 8250000 },
-      { id: 3, name: 'Haji', target: 7000000, collected: 700000 },
-      { id: 4, name: 'Rumah', target: 3000000, collected: 1100000 },
-      { id: 5, name: 'Mobil', target: 25000000, collected: 5550000 }
+      { id: 2, name: 'Umrah', target: 30000000, collected: 8250000 }
     ];
     
-    // Tarik data dari penyimpanan lokal agar rencana tidak hilang saat aplikasi ditutup
     const savedYearly = localStorage.getItem('yearlyPlansData');
     let yearlyPlans = savedYearly ? JSON.parse(savedYearly) : [
-      { id: 1, name: 'SPP Akhtar', category: 'Pendidikan & Anak', amount: 450000, actual: 1350000, months: [0, 1, 2, 3, 4, 5, 11] },
-      { id: 2, name: 'Antar Jemput', category: 'Transportasi (Bensin/Tol)', amount: 500000, actual: 1500000, months: [0, 1, 2, 3, 4, 5, 11] },
-      { id: 3, name: 'Biaya Pendidikan Kls.6', category: 'Pendidikan & Anak', amount: 1500000, actual: 0, months: [1, 2, 3] }
+      { id: 1, name: 'SPP Anak', category: 'Pendidikan & Anak', amount: 450000, actual: 0, months: [0, 1, 2, 3, 4, 5, 11] }
     ];
     let selectedYearlyMonths = [];
 
@@ -341,16 +389,12 @@
         }
       });
 
-      if (tabId === 'dashboard') {
-        renderDashboard(); // Update chart setiap kali dashboard dibuka
-      }
+      if (tabId === 'dashboard') renderDashboard(); 
     };
 
-    // --- USER TOGGLE ---
     const setCurrentUser = (user) => {
       currentUser = user;
       document.getElementById('monthly-user-label').innerText = user;
-      
       const btnSuami = document.getElementById('btn-suami');
       const btnIstri = document.getElementById('btn-istri');
       const inputSaldo = document.getElementById('input-saldo');
@@ -359,44 +403,24 @@
       if(user === 'Suami') {
         btnSuami.className = 'flex-1 text-xs font-bold py-1.5 rounded-md transition-all bg-white text-emerald-700 shadow';
         btnIstri.className = 'flex-1 text-xs font-bold py-1.5 rounded-md transition-all text-emerald-100 hover:text-white';
-        
-        // Buka akses input untuk Suami
-        if(inputSaldo) {
-          inputSaldo.disabled = false;
-          inputSaldo.classList.remove('bg-gray-200', 'text-gray-500', 'cursor-not-allowed');
-        }
-        if(inputPemasukan) {
-          inputPemasukan.disabled = false;
-          inputPemasukan.classList.remove('bg-gray-200', 'text-gray-500', 'cursor-not-allowed');
-        }
+        if(inputSaldo) { inputSaldo.disabled = false; inputSaldo.classList.remove('bg-gray-200', 'text-gray-500', 'cursor-not-allowed'); }
+        if(inputPemasukan) { inputPemasukan.disabled = false; inputPemasukan.classList.remove('bg-gray-200', 'text-gray-500', 'cursor-not-allowed'); }
       } else {
         btnIstri.className = 'flex-1 text-xs font-bold py-1.5 rounded-md transition-all bg-white text-emerald-700 shadow';
         btnSuami.className = 'flex-1 text-xs font-bold py-1.5 rounded-md transition-all text-emerald-100 hover:text-white';
-        
-        // Kunci input untuk Istri, hanya lihat total dana yang diisi Suami
-        if(inputSaldo) {
-          inputSaldo.disabled = true;
-          inputSaldo.classList.add('bg-gray-200', 'text-gray-500', 'cursor-not-allowed');
-        }
-        if(inputPemasukan) {
-          inputPemasukan.disabled = true;
-          inputPemasukan.classList.add('bg-gray-200', 'text-gray-500', 'cursor-not-allowed');
-        }
+        if(inputSaldo) { inputSaldo.disabled = true; inputSaldo.classList.add('bg-gray-200', 'text-gray-500', 'cursor-not-allowed'); }
+        if(inputPemasukan) { inputPemasukan.disabled = true; inputPemasukan.classList.add('bg-gray-200', 'text-gray-500', 'cursor-not-allowed'); }
       }
       calculateMonthly();
     };
 
-    // --- DASHBOARD RENDER & CHART ---
+    // --- DASHBOARD RENDER & CHARTS ---
     const renderDashboard = () => {
-      // Ambil tahun dan bulan yang sedang aktif di tab Bulanan
       const ySel = document.getElementById('select-year') ? document.getElementById('select-year').value : new Date().getFullYear();
       const mSel = document.getElementById('select-month') ? document.getElementById('select-month').value : new Date().getMonth();
       document.getElementById('dash-year').innerText = ySel;
       
-      // Ambil Histori dari penyimpanan lokal
       const history = JSON.parse(localStorage.getItem('monthlyHistory') || '{}');
-
-      // Kalkulasi nilai 'live' dari tab bulanan saat ini
       const liveSaldo = Number(document.getElementById('input-saldo')?.value) || 0;
       const livePemasukan = Number(document.getElementById('input-pemasukan')?.value) || 0;
       const liveIncome = liveSaldo + livePemasukan;
@@ -404,418 +428,250 @@
       const totalActualSav = monthlySavings.reduce((sum, s) => sum + (Number(s.actual) || 0), 0);
       const liveExp = totalActualExp + totalActualSav;
 
-      let totalYearIncome = 0;
-      let totalYearExpense = 0;
-      let activeMonthsCount = 0;
+      let totalYearIncome = 0; let totalYearExpense = 0; let activeMonthsCount = 0;
       let html = '';
+      let trendIncomes = []; let trendExpenses = [];
 
-      // Bangun rekap histori 12 bulan
       for (let m = 0; m < 12; m++) {
-        let mIncome = 0;
-        let mExpense = 0;
-        let hasData = false;
+        let mIncome = 0; let mExpense = 0; let hasData = false;
 
         if (m == mSel) {
-          // Prioritaskan nilai yang sedang diketik (Live) untuk bulan yang sedang aktif
-          mIncome = liveIncome;
-          mExpense = liveExp;
+          mIncome = liveIncome; mExpense = liveExp;
           if (mIncome > 0 || mExpense > 0 || history[`${ySel}_${m}`]) hasData = true;
         } else if (history[`${ySel}_${m}`]) {
-          // Gunakan histori untuk bulan lainnya
           mIncome = history[`${ySel}_${m}`].income || 0;
           mExpense = history[`${ySel}_${m}`].expense || 0;
           hasData = true;
         }
+        
+        trendIncomes.push(mIncome);
+        trendExpenses.push(mExpense);
 
         if (hasData) {
-          totalYearIncome += mIncome;
-          totalYearExpense += mExpense;
-          activeMonthsCount++;
-
-          html += `
-            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
+          totalYearIncome += mIncome; totalYearExpense += mExpense; activeMonthsCount++;
+          html += `<div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
               <span class="font-medium text-gray-700">${monthNames[m]}</span>
               <div class="text-right flex items-center gap-2">
                 <span class="text-sm font-semibold text-emerald-600">+${formatRp(mIncome)}</span>
                 <span class="text-gray-300">|</span>
                 <span class="text-sm font-semibold text-red-600">-${formatRp(mExpense)}</span>
-              </div>
-            </div>`;
+              </div></div>`;
         } else {
-          html += `
-            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100 opacity-50">
+          html += `<div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100 opacity-50">
               <span class="font-medium text-gray-400">${monthNames[m]}</span>
-              <span class="text-xs text-gray-400 font-medium bg-gray-200 px-2 py-1 rounded-md">Belum ada data</span>
-            </div>`;
+              <span class="text-xs text-gray-400 font-medium bg-gray-200 px-2 py-1 rounded-md">Belum ada data</span></div>`;
         }
       }
 
-      // Update angka ringkasan di dashboard
       document.getElementById('dash-months').innerHTML = html;
       document.getElementById('dash-total-pemasukan').innerText = formatRp(totalYearIncome);
       document.getElementById('dash-total-pengeluaran').innerText = formatRp(totalYearExpense);
-      
-      const avgExp = activeMonthsCount > 0 ? totalYearExpense / activeMonthsCount : 0;
-      document.getElementById('dash-rata-pengeluaran').innerText = formatRp(avgExp);
+      document.getElementById('dash-rata-pengeluaran').innerText = formatRp(activeMonthsCount > 0 ? totalYearExpense / activeMonthsCount : 0);
 
-      // === PROSES DATA GRAFIK DONAT ===
-      // Mengumpulkan total per kategori dari tab 'Bulanan' saat ini
-      const categoryTotals = {};
-      categoriesList.forEach(c => categoryTotals[c] = 0);
-      categoryTotals['Tabungan'] = totalActualSav; // Tambahkan kategori khusus tabungan di grafik
-      
-      expenses.forEach(e => {
-        if (e.actual) {
-          const cat = e.category || 'Lainnya';
-          categoryTotals[cat] = (categoryTotals[cat] || 0) + Number(e.actual);
-        }
-      });
-
-      // Memfilter kategori yang ada nilainya saja
-      const activeLabels = [];
-      const activeData = [];
-      const activeColors = [];
-      let legendHtml = '';
-
-      // Render Kategori Pengeluaran
-      categoriesList.forEach((cat, index) => {
-        if (categoryTotals[cat] > 0) {
-          activeLabels.push(cat);
-          activeData.push(categoryTotals[cat]);
-          activeColors.push(categoryColors[index]);
-          
-          legendHtml += `
-            <div class="flex justify-between items-center text-sm">
-              <div class="flex items-center gap-2">
-                <span class="w-3 h-3 rounded-full" style="background-color: ${categoryColors[index]}"></span>
-                <span class="text-gray-600">${cat}</span>
-              </div>
-              <span class="font-bold text-gray-800">${formatRp(categoryTotals[cat])}</span>
-            </div>
-          `;
-        }
-      });
-
-      // Render Kategori Tabungan jika ada
-      if (categoryTotals['Tabungan'] > 0) {
-        activeLabels.push('Tabungan');
-        activeData.push(categoryTotals['Tabungan']);
-        activeColors.push('#3b82f6'); // Warna biru untuk tabungan
-        
-        legendHtml += `
-          <div class="flex justify-between items-center text-sm mt-2 pt-2 border-t border-gray-100">
-            <div class="flex items-center gap-2">
-              <span class="w-3 h-3 rounded-full bg-blue-500"></span>
-              <span class="font-bold text-blue-600">Alokasi Tabungan</span>
-            </div>
-            <span class="font-bold text-blue-600">${formatRp(categoryTotals['Tabungan'])}</span>
-          </div>
-        `;
-      }
-
-      document.getElementById('chart-legend').innerHTML = legendHtml || '<p class="text-center text-xs text-gray-400 mt-4">Belum ada pengeluaran yang dicatat bulan ini.</p>';
-
-      // Render ulang Chart.js
-      const ctx = document.getElementById('expenseChart');
-      if (chartInstance) {
-        chartInstance.destroy();
-      }
-
-      // Jika data kosong, tampilkan grafik abu-abu kosong
-      if (activeData.length === 0) {
-        chartInstance = new Chart(ctx, {
-          type: 'doughnut',
-          data: {
-            labels: ['Belum ada data'],
-            datasets: [{ data: [1], backgroundColor: ['#e5e7eb'], borderWidth: 0 }]
-          },
-          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: false } }, cutout: '75%' }
-        });
-        return;
-      }
-
-      // Render grafik asli jika ada data
-      chartInstance = new Chart(ctx, {
-        type: 'doughnut',
+      // --- GRAFIK TREN (BARU) ---
+      const ctxTrend = document.getElementById('trendChart');
+      if (trendChartInstance) trendChartInstance.destroy();
+      trendChartInstance = new Chart(ctxTrend, {
+        type: 'line',
         data: {
-          labels: activeLabels,
-          datasets: [{
-            data: activeData,
-            backgroundColor: activeColors,
-            borderWidth: 2,
-            borderColor: '#ffffff',
-            hoverOffset: 4
-          }]
+          labels: monthShort,
+          datasets: [
+            { label: 'Pemasukan', data: trendIncomes, borderColor: '#10b981', backgroundColor: '#10b981', tension: 0.3, borderWidth: 2 },
+            { label: 'Pengeluaran', data: trendExpenses, borderColor: '#ef4444', backgroundColor: '#ef4444', tension: 0.3, borderWidth: 2 }
+          ]
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          cutout: '70%',
-          plugins: {
-            legend: { display: false }, // Disembunyikan karena legend html custom lebih rapi
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  let label = context.label || '';
-                  if (label) label += ': ';
-                  if (context.raw !== null) label += formatRp(context.raw);
-                  return label;
-                }
-              }
-            }
-          }
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: {size: 10} } } },
+          scales: { y: { display: false }, x: { grid: { display: false }, ticks: { font: {size: 10} } } }
         }
       });
+
+      // --- REALISASI TAHUNAN ---
+      let totalYearlyPlan = 0;
+      yearlyPlans.forEach(p => totalYearlyPlan += (p.amount * p.months.length));
+      const yearlySisa = totalYearlyPlan - totalYearExpense;
+      let yearlyPercent = totalYearlyPlan > 0 ? (totalYearExpense / totalYearlyPlan) * 100 : 0;
+      if(yearlyPercent > 100) yearlyPercent = 100;
+
+      if(document.getElementById('dash-yearly-plan')) {
+        document.getElementById('dash-yearly-plan').innerText = formatRp(totalYearlyPlan);
+        document.getElementById('dash-yearly-actual').innerText = formatRp(totalYearExpense);
+        
+        const sisaEl = document.getElementById('dash-yearly-sisa');
+        sisaEl.innerText = formatRp(yearlySisa);
+        sisaEl.className = yearlySisa >= 0 ? 'text-sm font-extrabold text-emerald-600' : 'text-sm font-extrabold text-red-600';
+        
+        document.getElementById('dash-yearly-percent').innerText = `${((totalYearlyPlan > 0 ? (totalYearExpense / totalYearlyPlan) * 100 : 0)).toFixed(1)}%`;
+        const barEl = document.getElementById('dash-yearly-bar');
+        barEl.style.width = `${yearlyPercent}%`;
+        
+        if (totalYearExpense > totalYearlyPlan && totalYearlyPlan > 0) {
+            barEl.className = 'h-full bg-gradient-to-r from-red-500 to-red-400 rounded-full transition-all duration-1000';
+            document.getElementById('dash-yearly-percent').className = 'text-red-600 font-bold';
+        } else {
+            barEl.className = 'h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-1000';
+            document.getElementById('dash-yearly-percent').className = 'text-emerald-600 font-bold';
+        }
+      }
+
+      // --- GRAFIK DONAT KATEGORI ---
+      const categoryTotals = {};
+      categoriesList.forEach(c => categoryTotals[c] = 0);
+      categoryTotals['Tabungan'] = totalActualSav; 
+      expenses.forEach(e => { if (e.actual) categoryTotals[e.category || 'Lainnya'] += Number(e.actual); });
+
+      const activeLabels = []; const activeData = []; const activeColors = []; let legendHtml = '';
+      categoriesList.forEach((cat, index) => {
+        if (categoryTotals[cat] > 0) {
+          activeLabels.push(cat); activeData.push(categoryTotals[cat]); activeColors.push(categoryColors[index]);
+          legendHtml += `<div class="flex justify-between items-center text-sm"><div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full" style="background-color: ${categoryColors[index]}"></span><span class="text-gray-600">${cat}</span></div><span class="font-bold text-gray-800">${formatRp(categoryTotals[cat])}</span></div>`;
+        }
+      });
+      if (categoryTotals['Tabungan'] > 0) {
+        activeLabels.push('Tabungan'); activeData.push(categoryTotals['Tabungan']); activeColors.push('#3b82f6');
+        legendHtml += `<div class="flex justify-between items-center text-sm mt-2 pt-2 border-t border-gray-100"><div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-blue-500"></span><span class="font-bold text-blue-600">Alokasi Tabungan</span></div><span class="font-bold text-blue-600">${formatRp(categoryTotals['Tabungan'])}</span></div>`;
+      }
+      document.getElementById('chart-legend').innerHTML = legendHtml || '<p class="text-center text-xs text-gray-400 mt-4">Belum ada data pengeluaran bulan ini.</p>';
+
+      const ctx = document.getElementById('expenseChart');
+      if (chartInstance) chartInstance.destroy();
+      if (activeData.length === 0) {
+        chartInstance = new Chart(ctx, { type: 'doughnut', data: { labels: ['Kosong'], datasets: [{ data: [1], backgroundColor: ['#e5e7eb'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: false } }, cutout: '75%' } });
+      } else {
+        chartInstance = new Chart(ctx, { type: 'doughnut', data: { labels: activeLabels, datasets: [{ data: activeData, backgroundColor: activeColors, borderWidth: 2, borderColor: '#fff' }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false } } } });
+      }
     };
 
-    // --- PULL YEARLY TO MONTHLY LOGIC ---
+    // --- PULL YEARLY TO MONTHLY ---
     const handleMonthChange = (isInit = false) => {
       const selectedMonth = Number(document.getElementById('select-month').value);
       const plansForMonth = yearlyPlans.filter(p => p.months.includes(selectedMonth));
       
-      // Jika diganti manual oleh user, reset input saldo & pemasukan
       if (!isInit) {
         document.getElementById('input-saldo').value = '';
         if(document.getElementById('input-pemasukan')) document.getElementById('input-pemasukan').value = '';
-        monthlySavings = [];
-        renderMonthlySavings();
+        monthlySavings = []; renderMonthlySavings();
       }
 
-      // Susun ulang daftar pengeluaran berdasarkan rencana
-      expenses = plansForMonth.map((plan, idx) => ({
-        id: Date.now() + idx,
-        name: plan.name,
-        category: plan.category || categoriesList[0],
-        planned: plan.amount,
-        actual: ''
-      }));
-      
-      // Tambah baris kosong di bawah
+      expenses = plansForMonth.map((plan, idx) => ({ id: Date.now() + idx, name: plan.name, category: plan.category || categoriesList[0], planned: plan.amount, actual: '' }));
       expenses.push({ id: Date.now() + 10000, name: '', category: categoriesList[0], planned: '', actual: '' });
-      
-      renderExpenses();
-      calculateMonthly();
-      if(!isInit) showToast(`Bulan diubah. Rencana ditarik otomatis.`);
+      renderExpenses(); calculateMonthly();
     };
 
     const pullYearlyPlansSafe = () => {
-      const selectedMonth = Number(document.getElementById('select-month').value);
-      const plansForMonth = yearlyPlans.filter(p => p.months.includes(selectedMonth));
-      
-      let addedCount = 0;
-      plansForMonth.forEach((plan, idx) => {
-        // Cek apakah rencana ini sudah ada di daftar (berdasarkan nama)
+      const selMonth = Number(document.getElementById('select-month').value);
+      const plans = yearlyPlans.filter(p => p.months.includes(selMonth));
+      let added = 0;
+      plans.forEach((plan, idx) => {
         const exists = expenses.find(e => e.name.toLowerCase() === plan.name.toLowerCase());
-        if (!exists) {
-          // Jika belum ada, masukkan ke urutan atas
-          expenses.unshift({ 
-            id: Date.now() + idx, 
-            name: plan.name, 
-            category: plan.category || categoriesList[0], 
-            planned: plan.amount, 
-            actual: '' 
-          });
-          addedCount++;
-        } else {
-          // Jika sudah ada, cukup update nilai rencananya agar sinkron
-          exists.planned = plan.amount;
-          exists.category = plan.category || exists.category;
-        }
+        if (!exists) { expenses.unshift({ id: Date.now() + idx, name: plan.name, category: plan.category || categoriesList[0], planned: plan.amount, actual: '' }); added++; } 
+        else { exists.planned = plan.amount; exists.category = plan.category || exists.category; }
       });
-      
-      // Bersihkan baris kosong ganda, pastikan sisa 1 di bawah
       expenses = expenses.filter(e => e.name.trim() !== '' || e.planned !== '' || e.actual !== '');
       expenses.push({ id: Date.now() + 10000, name: '', category: categoriesList[0], planned: '', actual: '' });
-      
-      renderExpenses();
-      calculateMonthly();
-      showToast(addedCount > 0 ? `✅ ${addedCount} Rencana ditarik!` : `✅ Data sudah tersinkronisasi`);
+      renderExpenses(); calculateMonthly();
+      showToast(added > 0 ? `✅ ${added} Rencana ditarik!` : `✅ Data sinkron`);
     };
 
     // --- MONTHLY LOGIC ---
     const renderExpenses = () => {
-      const list = document.getElementById('expense-list');
-      list.innerHTML = expenses.map((exp) => {
-        // Kalkulasi sisa plan vs aktual per item
+      document.getElementById('expense-list').innerHTML = expenses.map(exp => {
         const plannedVal = Number(exp.planned) || 0;
         const actualVal = Number(exp.actual) || 0;
         const sisaVal = plannedVal - actualVal;
-        const sisaColor = sisaVal >= 0 ? 'text-emerald-600' : 'text-red-600';
+        
+        let sisaColor = 'text-emerald-600';
+        let warningIcon = '';
+        
+        // LOGIKA PERINGATAN WARNA
+        if (sisaVal < 0) {
+          sisaColor = 'text-red-600';
+          warningIcon = '<span class="text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded ml-2">⚠️ Over</span>';
+        } else if (plannedVal > 0 && sisaVal <= (plannedVal * 0.1)) {
+          sisaColor = 'text-orange-500';
+          warningIcon = '<span class="text-[9px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded ml-2">⚠️ Tipis</span>';
+        }
 
         return `
         <div class="bg-gray-50 border border-gray-100 rounded-xl p-3 space-y-2">
           <div class="flex justify-between items-center">
-            <input type="text" value="${exp.name}" oninput="updateExpense(${exp.id}, 'name', this.value)" placeholder="Nama pengeluaran..." class="flex-1 bg-transparent font-bold text-gray-800 focus:outline-none placeholder-gray-400">
-            <button onclick="removeExpenseRow(${exp.id})" class="text-gray-400 hover:text-red-500 p-1">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-            </button>
+            <input type="text" value="${exp.name}" oninput="updateExpense(${exp.id}, 'name', this.value)" placeholder="Nama pengeluaran..." class="flex-1 bg-transparent font-bold text-gray-800 focus:outline-none">
+            <button onclick="removeExpenseRow(${exp.id})" class="text-gray-400 hover:text-red-500 p-1"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
           </div>
-          
-          <!-- Dropdown Kategori -->
-          <div>
-            <select onchange="updateExpense(${exp.id}, 'category', this.value)" class="w-full p-2 bg-white border border-gray-200 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-emerald-500 outline-none text-gray-600">
-              ${categoriesList.map(cat => `<option value="${cat}" ${exp.category === cat ? 'selected' : ''}>${cat}</option>`).join('')}
-            </select>
-          </div>
-
+          <div><select onchange="updateExpense(${exp.id}, 'category', this.value)" class="w-full p-2 bg-white border border-gray-200 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-emerald-500 outline-none text-gray-600">${categoriesList.map(cat => `<option value="${cat}" ${exp.category === cat ? 'selected' : ''}>${cat}</option>`).join('')}</select></div>
           <div class="grid grid-cols-2 gap-2 mt-1">
-            <div>
-              <label class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Rencana</label>
-              <input type="number" value="${exp.planned}" oninput="updateExpense(${exp.id}, 'planned', this.value)" placeholder="0" class="w-full p-2 bg-white border border-gray-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-emerald-500 outline-none">
-            </div>
-            <div>
-              <label class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Aktual</label>
-              <input type="number" value="${exp.actual}" oninput="updateExpense(${exp.id}, 'actual', this.value)" placeholder="0" class="w-full p-2 bg-white border border-red-100 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-red-400 outline-none text-red-600">
-            </div>
+            <div><label class="text-[10px] uppercase font-bold text-gray-400">Rencana</label><input type="number" value="${exp.planned}" oninput="updateExpense(${exp.id}, 'planned', this.value)" placeholder="0" class="w-full p-2 bg-white border border-gray-200 rounded-lg text-sm font-semibold outline-none"></div>
+            <div><label class="text-[10px] uppercase font-bold text-gray-400">Aktual</label><input type="number" value="${exp.actual}" oninput="updateExpense(${exp.id}, 'actual', this.value)" placeholder="0" class="w-full p-2 bg-white border ${sisaVal < 0 ? 'border-red-300' : 'border-gray-200'} rounded-lg text-sm font-semibold outline-none text-gray-800"></div>
           </div>
-          
-          <!-- INDIKATOR KONTROL SISA BUDGET -->
           <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-200 border-dashed">
-            <span class="text-[10px] uppercase font-bold text-gray-500">Sisa Plan Ini</span>
+            <div class="flex items-center"><span class="text-[10px] uppercase font-bold text-gray-500">Sisa Plan</span>${warningIcon}</div>
             <span class="text-xs font-extrabold ${sisaColor}">${formatRp(sisaVal)}</span>
           </div>
-        </div>
-      `}).join('');
-    };
-
-    const addExpenseRow = () => {
-      expenses.push({ id: Date.now(), name: '', category: categoriesList[0], planned: '', actual: '' });
-      renderExpenses();
-    };
-
-    const removeExpenseRow = (id) => {
-      expenses = expenses.filter(e => e.id !== id);
-      if (expenses.length === 0) expenses.push({ id: Date.now(), name: '', category: categoriesList[0], planned: '', actual: '' });
-      renderExpenses();
-      calculateMonthly();
-    };
-
-    const updateExpense = (id, field, value) => {
-      const exp = expenses.find(e => e.id === id);
-      if (exp) {
-        exp[field] = value;
-        calculateMonthly();
-      }
-    };
-
-    // --- MONTHLY SAVINGS LOGIC (NEW) ---
-    const renderMonthlySavings = () => {
-      const list = document.getElementById('monthly-savings-list');
-      if (monthlySavings.length === 0) {
-        list.innerHTML = '<p class="text-center text-xs text-gray-400 font-medium">Belum ada alokasi tabungan bulan ini.</p>';
-        return;
-      }
-
-      list.innerHTML = monthlySavings.map(ms => {
-        const goalOptions = savingsGoals.map(g => `<option value="${g.id}" ${ms.goalId == g.id ? 'selected' : ''}>${g.name}</option>`).join('');
-        
-        // Kalkulasi sisa plan vs aktual per item tabungan
-        const plannedVal = Number(ms.planned) || 0;
-        const actualVal = Number(ms.actual) || 0;
-        const sisaVal = plannedVal - actualVal;
-        const sisaColor = sisaVal >= 0 ? 'text-blue-600' : 'text-red-600';
-
-        return `
-          <div class="bg-blue-50/50 border border-blue-100 rounded-xl p-3 space-y-2">
-            <div class="flex justify-between items-center">
-              <select onchange="updateMonthlySaving(${ms.id}, 'goalId', this.value)" class="flex-1 bg-transparent font-bold text-blue-800 focus:outline-none p-1 border-b border-blue-200">
-                <option value="" disabled ${!ms.goalId ? 'selected' : ''}>Pilih peruntukan tabungan...</option>
-                ${goalOptions}
-              </select>
-              <button onclick="removeMonthlySavingRow(${ms.id})" class="text-gray-400 hover:text-red-500 p-1 ml-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-              </button>
-            </div>
-            <div class="grid grid-cols-2 gap-2 mt-2">
-              <div>
-                <label class="text-[10px] uppercase font-bold text-blue-400 tracking-wider">Rencana</label>
-                <input type="number" value="${ms.planned}" oninput="updateMonthlySaving(${ms.id}, 'planned', this.value)" placeholder="0" class="w-full p-2 bg-white border border-blue-100 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-blue-500 outline-none">
-              </div>
-              <div>
-                <label class="text-[10px] uppercase font-bold text-blue-400 tracking-wider">Aktual</label>
-                <input type="number" value="${ms.actual}" oninput="updateMonthlySaving(${ms.id}, 'actual', this.value)" placeholder="0" class="w-full p-2 bg-white border border-blue-200 rounded-lg text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none text-blue-600">
-              </div>
-            </div>
-            
-            <!-- INDIKATOR KONTROL SISA BUDGET -->
-            <div class="flex justify-between items-center mt-2 pt-2 border-t border-blue-200 border-dashed">
-              <span class="text-[10px] uppercase font-bold text-blue-500">Sisa Plan Ini</span>
-              <span class="text-xs font-extrabold ${sisaColor}">${formatRp(sisaVal)}</span>
-            </div>
-          </div>
-        `;
+        </div>`
       }).join('');
     };
 
-    const addMonthlySavingRow = () => {
-      monthlySavings.push({ id: Date.now(), goalId: '', planned: '', actual: '' });
-      renderMonthlySavings();
-      calculateMonthly();
+    const addExpenseRow = () => { expenses.push({ id: Date.now(), name: '', category: categoriesList[0], planned: '', actual: '' }); renderExpenses(); };
+    const removeExpenseRow = (id) => { expenses = expenses.filter(e => e.id !== id); if (expenses.length === 0) expenses.push({ id: Date.now(), name: '', category: categoriesList[0], planned: '', actual: '' }); renderExpenses(); calculateMonthly(); };
+    const updateExpense = (id, field, value) => { const exp = expenses.find(e => e.id === id); if (exp) { exp[field] = value; calculateMonthly(); } };
+
+    const renderMonthlySavings = () => {
+      const list = document.getElementById('monthly-savings-list');
+      if (monthlySavings.length === 0) { list.innerHTML = '<p class="text-center text-xs text-gray-400">Belum ada alokasi tabungan.</p>'; return; }
+      list.innerHTML = monthlySavings.map(ms => {
+        const goalOpts = savingsGoals.map(g => `<option value="${g.id}" ${ms.goalId == g.id ? 'selected' : ''}>${g.name}</option>`).join('');
+        const pVal = Number(ms.planned)||0; const aVal = Number(ms.actual)||0; const sVal = pVal - aVal;
+        
+        let sColor = 'text-blue-600'; let wIcon = '';
+        if (sVal < 0) { sColor = 'text-red-600'; wIcon = '<span class="text-[9px] bg-red-100 text-red-600 px-1 py-0.5 rounded ml-2">⚠️ Over</span>'; } 
+        else if (pVal > 0 && sVal <= (pVal * 0.1)) { sColor = 'text-orange-500'; wIcon = '<span class="text-[9px] bg-orange-100 text-orange-600 px-1 py-0.5 rounded ml-2">⚠️ Tipis</span>'; }
+
+        return `<div class="bg-blue-50/50 border border-blue-100 rounded-xl p-3 space-y-2">
+            <div class="flex justify-between items-center"><select onchange="updateMonthlySaving(${ms.id}, 'goalId', this.value)" class="flex-1 bg-transparent font-bold text-blue-800 outline-none p-1 border-b border-blue-200"><option value="" disabled ${!ms.goalId ? 'selected' : ''}>Pilih tabungan...</option>${goalOpts}</select><button onclick="removeMonthlySavingRow(${ms.id})" class="text-gray-400 hover:text-red-500 p-1 ml-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div>
+            <div class="grid grid-cols-2 gap-2 mt-2">
+              <div><label class="text-[10px] uppercase font-bold text-blue-400">Rencana</label><input type="number" value="${ms.planned}" oninput="updateMonthlySaving(${ms.id}, 'planned', this.value)" placeholder="0" class="w-full p-2 bg-white border border-blue-100 rounded-lg text-sm font-semibold outline-none"></div>
+              <div><label class="text-[10px] uppercase font-bold text-blue-400">Aktual</label><input type="number" value="${ms.actual}" oninput="updateMonthlySaving(${ms.id}, 'actual', this.value)" placeholder="0" class="w-full p-2 bg-white border border-blue-200 rounded-lg text-sm font-bold outline-none text-blue-600"></div>
+            </div>
+            <div class="flex justify-between items-center mt-2 pt-2 border-t border-blue-200 border-dashed"><div class="flex items-center"><span class="text-[10px] uppercase font-bold text-blue-500">Sisa Plan</span>${wIcon}</div><span class="text-xs font-extrabold ${sColor}">${formatRp(sVal)}</span></div>
+          </div>`;
+      }).join('');
     };
 
-    const removeMonthlySavingRow = (id) => {
-      monthlySavings = monthlySavings.filter(s => s.id !== id);
-      renderMonthlySavings();
-      calculateMonthly();
-    };
-
-    const updateMonthlySaving = (id, field, value) => {
-      const sav = monthlySavings.find(s => s.id === id);
-      if (sav) {
-        sav[field] = value;
-        calculateMonthly();
-      }
-    };
+    const addMonthlySavingRow = () => { monthlySavings.push({ id: Date.now(), goalId: '', planned: '', actual: '' }); renderMonthlySavings(); calculateMonthly(); };
+    const removeMonthlySavingRow = (id) => { monthlySavings = monthlySavings.filter(s => s.id !== id); renderMonthlySavings(); calculateMonthly(); };
+    const updateMonthlySaving = (id, field, value) => { const sav = monthlySavings.find(s => s.id === id); if (sav) { sav[field] = value; calculateMonthly(); } };
 
     const calculateMonthly = () => {
       const saldo = Number(document.getElementById('input-saldo').value) || 0;
       const pemasukan = Number(document.getElementById('input-pemasukan').value) || 0;
-      
       const totalAvailable = saldo + pemasukan;
-      
-      // Hitung pengeluaran + tabungan
-      const totalPlannedExp = expenses.reduce((sum, e) => sum + (Number(e.planned) || 0), 0);
-      const totalActualExp = expenses.reduce((sum, e) => sum + (Number(e.actual) || 0), 0);
-      
-      const totalPlannedSav = monthlySavings.reduce((sum, s) => sum + (Number(s.planned) || 0), 0);
-      const totalActualSav = monthlySavings.reduce((sum, s) => sum + (Number(s.actual) || 0), 0);
-
-      const totalPlanned = totalPlannedExp + totalPlannedSav;
-      const totalActual = totalActualExp + totalActualSav;
+      const totalPlanned = expenses.reduce((s, e) => s + (Number(e.planned)||0), 0) + monthlySavings.reduce((s, x) => s + (Number(x.planned)||0), 0);
+      const totalActual = expenses.reduce((s, e) => s + (Number(e.actual)||0), 0) + monthlySavings.reduce((s, x) => s + (Number(x.actual)||0), 0);
       const remaining = totalAvailable - totalActual;
 
-      const totalTersediaEl = document.getElementById('total-tersedia');
-      if (totalTersediaEl) totalTersediaEl.innerText = formatRp(totalAvailable);
-      
-      const totalRencanaEl = document.getElementById('total-rencana');
-      if (totalRencanaEl) totalRencanaEl.innerText = formatRp(totalPlanned);
-      
-      const totalAktualEl = document.getElementById('total-aktual');
-      if (totalAktualEl) totalAktualEl.innerText = formatRp(totalActual);
-      
-      const totalSisaEl = document.getElementById('total-sisa');
-      if (totalSisaEl) totalSisaEl.innerText = formatRp(remaining);
-
-      const boxSisa = document.getElementById('box-sisa');
-      const labelSisa = document.getElementById('label-sisa');
-      const textSisa = document.getElementById('total-sisa');
-
-      if (boxSisa && labelSisa && textSisa) {
+      if(document.getElementById('total-tersedia')) {
+        document.getElementById('total-tersedia').innerText = formatRp(totalAvailable);
+        document.getElementById('total-rencana').innerText = formatRp(totalPlanned);
+        document.getElementById('total-aktual').innerText = formatRp(totalActual);
+        document.getElementById('total-sisa').innerText = formatRp(remaining);
+        
+        const boxSisa = document.getElementById('box-sisa');
         if (remaining >= 0) {
           boxSisa.className = 'rounded-xl p-3 border bg-emerald-50 border-emerald-100';
-          labelSisa.className = 'text-[10px] uppercase font-bold mb-1 text-emerald-500';
-          textSisa.className = 'font-bold text-sm text-emerald-600';
+          document.getElementById('label-sisa').className = 'text-[10px] uppercase font-bold mb-1 text-emerald-500';
+          document.getElementById('total-sisa').className = 'font-bold text-sm text-emerald-600';
         } else {
           boxSisa.className = 'rounded-xl p-3 border bg-red-50 border-red-100';
-          labelSisa.className = 'text-[10px] uppercase font-bold mb-1 text-red-500';
-          textSisa.className = 'font-bold text-sm text-red-600';
+          document.getElementById('label-sisa').className = 'text-[10px] uppercase font-bold mb-1 text-red-500';
+          document.getElementById('total-sisa').className = 'font-bold text-sm text-red-600';
         }
       }
+      renderExpenses(); // Untuk memicu update warna peringatan overbudget
     };
 
     const handleSaveMonthly = async () => {
       showToast('⏳ Menyimpan data...');
-      
       const mSel = document.getElementById('select-month').value;
       const ySel = document.getElementById('select-year').value;
       const pemasukan = document.getElementById('input-pemasukan').value;
@@ -823,353 +679,200 @@
 
       try {
         if (currentUser === 'Suami' && Number(pemasukan) > 0) {
-          await fetch(SCRIPT_URL, {
-            method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              tanggal: new Date().toISOString().split('T')[0],
-              pengguna: currentUser, 
-              jenis: 'Pemasukan', 
-              kategori: 'Gaji/Pemasukan Utama', // Kolom kategori di sheet
-              nominal: pemasukan,
-              keterangan: `Periode: ${monthNames[mSel]} ${ySel}` // Keterangan di sheet
-            })
-          });
+          await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tanggal: new Date().toISOString().split('T')[0], pengguna: currentUser, jenis: 'Pemasukan', kategori: 'Gaji/Pemasukan Utama', nominal: pemasukan, keterangan: `Periode: ${monthNames[mSel]} ${ySel}` }) });
         }
 
         for (const exp of expenses) {
           if (exp.name && exp.actual) {
-            await fetch(SCRIPT_URL, {
-              method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                tanggal: new Date().toISOString().split('T')[0],
-                pengguna: currentUser, 
-                jenis: 'Pengeluaran', 
-                kategori: exp.category, // Memasukkan pilihan kategori ke spreadsheet
-                nominal: exp.actual,
-                keterangan: `${exp.name} | Rencana: ${exp.planned || 0}` // Nama pengeluaran pindah ke keterangan
-              })
-            });
+            await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tanggal: new Date().toISOString().split('T')[0], pengguna: currentUser, jenis: 'Pengeluaran', kategori: exp.category, nominal: exp.actual, keterangan: `${exp.name} | Rencana: ${exp.planned || 0}` }) });
           }
         }
 
-        // Simpan Tabungan Bulanan ke Spreadsheet & Update Progress
         for (const ms of monthlySavings) {
           if (ms.goalId && ms.actual) {
             const goal = savingsGoals.find(g => g.id == ms.goalId);
             if (goal) {
-              // 1. Catat ke Spreadsheet sebagai transaksi Tabungan
-              await fetch(SCRIPT_URL, {
-                method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  tanggal: new Date().toISOString().split('T')[0],
-                  pengguna: currentUser, 
-                  jenis: 'Tabungan', 
-                  kategori: 'Alokasi Tabungan', 
-                  nominal: ms.actual,
-                  keterangan: `Target: ${goal.name} | Rencana: ${ms.planned || 0}`
-                })
-              });
-              
-              // 2. Tambahkan saldo "Terkumpul" ke data Tabungan
+              await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tanggal: new Date().toISOString().split('T')[0], pengguna: currentUser, jenis: 'Tabungan', kategori: 'Alokasi Tabungan', nominal: ms.actual, keterangan: `Target: ${goal.name} | Rencana: ${ms.planned || 0}` }) });
               goal.collected = (Number(goal.collected) || 0) + Number(ms.actual);
             }
           }
         }
         
-        // Simpan pembaruan progres tabungan ke Cloud secara otomatis
         saveSavingsData(true);
         
-        // Simpan Histori Total Bulan Ini ke Memori Lokal untuk Dashboard
-        const totalActualExp = expenses.reduce((sum, e) => sum + (Number(e.actual) || 0), 0);
-        const totalActualSav = monthlySavings.reduce((sum, s) => sum + (Number(s.actual) || 0), 0);
+        // SIMPAN KE HISTORI PENCARIAN (DETAIL) & HISTORI DASHBOARD
+        const totalActExp = expenses.reduce((sum, e) => sum + (Number(e.actual) || 0), 0);
+        const totalActSav = monthlySavings.reduce((sum, s) => sum + (Number(s.actual) || 0), 0);
         
         let history = JSON.parse(localStorage.getItem('monthlyHistory') || '{}');
-        history[`${ySel}_${mSel}`] = {
-            income: (Number(saldo) || 0) + (Number(pemasukan) || 0),
-            expense: totalActualExp + totalActualSav
-        };
+        history[`${ySel}_${mSel}`] = { income: (Number(saldo) || 0) + (Number(pemasukan) || 0), expense: totalActExp + totalActSav };
         localStorage.setItem('monthlyHistory', JSON.stringify(history));
 
-        // Reset nilai "aktual" pengeluaran dan tabungan agar siap diisi lagi
+        let detailedHistory = JSON.parse(localStorage.getItem('detailedHistoryObj') || '{}');
+        detailedHistory[`${ySel}_${mSel}`] = {
+           items: [
+               ...expenses.filter(e => e.actual).map(e => ({ name: e.name, category: e.category, actual: e.actual, type: 'Pengeluaran' })),
+               ...monthlySavings.filter(s => s.actual).map(s => { const g = savingsGoals.find(x => x.id == s.goalId); return { name: g ? g.name : 'Tabungan', category: 'Tabungan', actual: s.actual, type: 'Tabungan' }; })
+           ]
+        };
+        localStorage.setItem('detailedHistoryObj', JSON.stringify(detailedHistory));
+
         expenses.forEach(exp => exp.actual = '');
         monthlySavings.forEach(ms => ms.actual = '');
+        if (document.getElementById('input-pemasukan')) document.getElementById('input-pemasukan').value = '';
         
-        // Opsional: Reset input pemasukan juga
-        if (document.getElementById('input-pemasukan')) {
-            document.getElementById('input-pemasukan').value = '';
-        }
-        
-        // Perbarui semua tampilan UI dan kalkulasi Sisa Dana
-        renderExpenses();
-        renderMonthlySavings();
-        renderSavings(); 
-        calculateMonthly();
-
+        renderExpenses(); renderMonthlySavings(); renderSavings(); calculateMonthly();
         showToast('✅ Semua data berhasil disimpan!');
-      } catch (error) {
-        showToast('❌ Gagal menyimpan data. Periksa koneksi.');
+      } catch (error) { showToast('❌ Gagal menyimpan data.'); }
+    };
+
+    // --- PENCARIAN RIWAYAT ---
+    const performSearch = () => {
+      const q = document.getElementById('search-input').value.toLowerCase();
+      const resultsDiv = document.getElementById('search-results');
+      
+      if(q.length < 2) {
+          resultsDiv.innerHTML = '<p class="text-center text-gray-400 text-sm mt-8">Ketik nama barang atau kategori...</p>';
+          return;
+      }
+
+      const detailedHistory = JSON.parse(localStorage.getItem('detailedHistoryObj') || '{}');
+      let found = [];
+
+      Object.keys(detailedHistory).forEach(key => {
+         const [y, m] = key.split('_');
+         const items = detailedHistory[key].items || [];
+         items.forEach(item => {
+             if(item.name.toLowerCase().includes(q) || item.category.toLowerCase().includes(q)) {
+                 found.push({ ...item, monthStr: `${monthNames[m]} ${y}` });
+             }
+         });
+      });
+
+      if(found.length === 0) {
+          resultsDiv.innerHTML = '<p class="text-center text-gray-400 text-sm mt-8">Tidal ada riwayat yang cocok.</p>';
+          return;
+      }
+
+      resultsDiv.innerHTML = found.map(item => `
+          <div class="bg-gray-50 border border-gray-100 rounded-xl p-3 flex justify-between items-center">
+             <div>
+               <span class="text-[9px] font-bold text-white bg-blue-500 px-2 py-0.5 rounded-md uppercase tracking-wider">${item.category}</span>
+               <h4 class="font-bold text-gray-800 mt-1.5">${item.name}</h4>
+               <p class="text-xs text-gray-500">${item.monthStr}</p>
+             </div>
+             <div class="text-right font-extrabold text-red-500">
+               ${formatRp(item.actual)}
+             </div>
+          </div>
+      `).join('');
+    };
+
+    // --- EXPORT LAPORAN GAMBAR ---
+    const downloadReport = async () => {
+      showToast('⏳ Menyiapkan laporan...');
+      try {
+        const mSel = document.getElementById('select-month').value;
+        const ySel = document.getElementById('select-year').value;
+        const totalAvail = document.getElementById('total-tersedia').innerText;
+        const totalAct = document.getElementById('total-aktual').innerText;
+        const totalSisa = document.getElementById('total-sisa').innerText;
+
+        // Bikin elemen bayangan untuk dicapture
+        const report = document.createElement('div');
+        report.className = 'bg-white p-6 w-[400px] fixed top-0 -left-[2000px] shadow-lg rounded-2xl font-sans';
+        report.innerHTML = `
+          <div class="bg-gradient-to-r from-emerald-600 to-emerald-500 rounded-xl p-5 text-white mb-5 text-center">
+            <h2 class="text-2xl font-bold mb-1">Laporan Keuangan Keluarga</h2>
+            <p class="text-sm font-medium opacity-90">Periode: ${monthNames[mSel]} ${ySel}</p>
+          </div>
+          <div class="space-y-3 mb-6">
+            <div class="bg-gray-50 p-4 rounded-xl flex justify-between items-center border border-gray-100">
+              <span class="text-gray-500 font-bold text-sm">Dana Tersedia</span>
+              <span class="font-bold text-gray-800 text-lg">${totalAvail}</span>
+            </div>
+            <div class="bg-red-50 p-4 rounded-xl flex justify-between items-center border border-red-100">
+              <span class="text-red-500 font-bold text-sm">Total Pengeluaran</span>
+              <span class="font-bold text-red-600 text-lg">${totalAct}</span>
+            </div>
+            <div class="bg-emerald-50 p-4 rounded-xl flex justify-between items-center border border-emerald-100">
+              <span class="text-emerald-600 font-bold text-sm">Sisa Dana</span>
+              <span class="font-bold text-emerald-600 text-lg">${totalSisa}</span>
+            </div>
+          </div>
+          <p class="text-center text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-8 border-t pt-4">Generated by Family Budget Planner</p>
+        `;
+        document.body.appendChild(report);
+
+        // Capture pakai html2canvas (skala resolusi tinggi)
+        const canvas = await html2canvas(report, { scale: 2, useCORS: true }); 
+        document.body.removeChild(report);
+
+        // Download PNG
+        const link = document.createElement('a');
+        link.download = `Laporan_Keuangan_${monthNames[mSel]}_${ySel}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+
+        showToast('✅ Laporan gambar diunduh!');
+      } catch (err) {
+        console.error(err);
+        showToast('❌ Gagal membuat laporan.');
       }
     };
 
-    // --- SAVINGS LOGIC ---
+    // --- SISANYA SAMA SEPERTI SEBELUMNYA (SAVINGS, YEARLY, CLOUD) ---
     const renderSavings = () => {
       document.getElementById('savings-list').innerHTML = savingsGoals.map(goal => {
         const progress = goal.target > 0 ? Math.min((goal.collected / goal.target) * 100, 100) : 0;
         const shortage = Math.max(goal.target - goal.collected, 0);
-        return `
-          <div class="bg-gray-50 rounded-2xl p-4 border border-gray-100 relative overflow-hidden group">
-            <div class="flex justify-between items-start mb-3">
-              <div>
-                <h4 class="font-extrabold text-gray-800 text-lg">${goal.name}</h4>
-                <p class="text-xs font-semibold text-gray-500 mt-0.5">Target: ${formatRp(goal.target)}</p>
-              </div>
-              <button onclick="deleteSavings(${goal.id})" class="text-gray-300 hover:text-red-500 transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-              </button>
-            </div>
-            <div class="mb-4">
-              <div class="flex justify-between text-xs font-bold mb-1.5">
-                <span class="text-gray-400 uppercase tracking-wider">Progress</span>
-                <span class="text-emerald-600">${progress.toFixed(1)}%</span>
-              </div>
-              <div class="h-2.5 bg-gray-200 rounded-full overflow-hidden">
-                <div class="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" style="width: ${progress}%"></div>
-              </div>
-            </div>
-            <div class="grid grid-cols-2 gap-2 text-center">
-              <div class="bg-white rounded-xl p-2.5 border border-emerald-50">
-                <p class="text-[10px] uppercase font-bold text-gray-400 mb-0.5">Terkumpul</p>
-                <p class="font-bold text-emerald-600 text-sm">${formatRp(goal.collected)}</p>
-              </div>
-              <div class="bg-white rounded-xl p-2.5 border border-red-50">
-                <p class="text-[10px] uppercase font-bold text-gray-400 mb-0.5">Kekurangan</p>
-                <p class="font-bold text-red-500 text-sm">${formatRp(shortage)}</p>
-              </div>
-            </div>
-          </div>
-        `;
+        return `<div class="bg-gray-50 rounded-2xl p-4 border border-gray-100 group">
+            <div class="flex justify-between items-start mb-3"><div><h4 class="font-extrabold text-gray-800 text-lg">${goal.name}</h4><p class="text-xs font-semibold text-gray-500 mt-0.5">Target: ${formatRp(goal.target)}</p></div><button onclick="deleteSavings(${goal.id})" class="text-gray-300 hover:text-red-500"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg></button></div>
+            <div class="mb-4"><div class="flex justify-between text-xs font-bold mb-1.5"><span class="text-gray-400">PROGRESS</span><span class="text-emerald-600">${progress.toFixed(1)}%</span></div><div class="h-2.5 bg-gray-200 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" style="width: ${progress}%"></div></div></div>
+            <div class="grid grid-cols-2 gap-2 text-center"><div class="bg-white rounded-xl p-2.5 border border-emerald-50"><p class="text-[10px] uppercase font-bold text-gray-400 mb-0.5">Terkumpul</p><p class="font-bold text-emerald-600 text-sm">${formatRp(goal.collected)}</p></div><div class="bg-white rounded-xl p-2.5 border border-red-50"><p class="text-[10px] uppercase font-bold text-gray-400 mb-0.5">Kekurangan</p><p class="font-bold text-red-500 text-sm">${formatRp(shortage)}</p></div></div>
+          </div>`;
       }).join('');
     };
 
-    const openSavingsModal = () => {
-      document.getElementById('modal-savings').classList.remove('hidden');
-      document.getElementById('sav-name').value = '';
-      document.getElementById('sav-target').value = '';
-      document.getElementById('sav-collected').value = '';
-    };
+    const openSavingsModal = () => { document.getElementById('modal-savings').classList.remove('hidden'); document.getElementById('sav-name').value=''; document.getElementById('sav-target').value=''; document.getElementById('sav-collected').value=''; };
+    const saveSavings = () => { const n = document.getElementById('sav-name').value; const t = Number(document.getElementById('sav-target').value); const c = Number(document.getElementById('sav-collected').value)||0; if(!n||t<=0)return showToast('⚠️ Lengkapi data'); savingsGoals.push({id:Date.now(), name:n, target:t, collected:c}); renderSavings(); closeModal('modal-savings'); saveSavingsData(); };
+    const deleteSavings = (id) => { if(confirm('Hapus tabungan?')) { savingsGoals = savingsGoals.filter(g=>g.id!==id); renderSavings(); saveSavingsData(); showToast('🗑️ Terhapus'); } };
 
-    const saveSavings = () => {
-      const name = document.getElementById('sav-name').value;
-      const target = Number(document.getElementById('sav-target').value);
-      const collected = Number(document.getElementById('sav-collected').value) || 0;
-      if(!name || target <= 0) return showToast('⚠️ Lengkapi nama dan target');
-      
-      savingsGoals.push({ id: Date.now(), name, target, collected });
-      renderSavings();
-      closeModal('modal-savings');
-      
-      saveSavingsData(); // Sinkronkan ke cloud
-    };
-
-    const deleteSavings = (id) => {
-      if(confirm('Hapus target tabungan ini?')) {
-        savingsGoals = savingsGoals.filter(g => g.id !== id);
-        renderSavings();
-        saveSavingsData(); // Sinkronkan ke cloud
-        showToast('🗑️ Target dihapus');
-      }
-    };
-
-    // --- YEARLY LOGIC ---
     const renderYearly = () => {
       document.getElementById('yearly-list').innerHTML = yearlyPlans.map(plan => {
-        const totalPlan = plan.months.length * plan.amount;
-        const actual = plan.actual || 0;
-        const selisih = totalPlan - actual;
-        const selisihClass = selisih >= 0 ? 'text-emerald-600' : 'text-red-600';
-
-        const monthsHtml = monthShort.map((name, i) => {
-          const isActive = plan.months.includes(i);
-          return `<div class="text-center p-1.5 rounded-lg ${isActive ? 'bg-emerald-500 text-white shadow-sm' : 'bg-gray-50 text-gray-400'}"><span class="text-[10px] font-bold block">${name}</span></div>`;
-        }).join('');
-
-        return `
-          <div class="bg-white border-2 border-gray-100 rounded-2xl p-4 hover:border-emerald-100 transition-colors">
-            <div class="flex justify-between items-start mb-3">
-              <div>
-                <span class="text-[10px] font-bold text-white bg-emerald-500 px-2 py-1 rounded-md uppercase tracking-wider mb-2 inline-block">${plan.category || 'Lainnya'}</span>
-                <h4 class="font-extrabold text-gray-800 text-base">${plan.name}</h4>
-                <p class="text-xs font-bold text-gray-500 mt-0.5">Rencana: ${formatRp(plan.amount)} / bln</p>
-              </div>
-              <button onclick="deleteYearly(${plan.id})" class="text-gray-300 hover:text-red-500">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-              </button>
-            </div>
+        const totalPlan = plan.months.length * plan.amount; const actual = plan.actual || 0; const selisih = totalPlan - actual; const selisihClass = selisih >= 0 ? 'text-emerald-600' : 'text-red-600';
+        const monthsHtml = monthShort.map((name, i) => `<div class="text-center p-1.5 rounded-lg ${plan.months.includes(i) ? 'bg-emerald-500 text-white' : 'bg-gray-50 text-gray-400'}"><span class="text-[10px] font-bold block">${name}</span></div>`).join('');
+        return `<div class="bg-white border-2 border-gray-100 rounded-2xl p-4 hover:border-emerald-100 transition-colors">
+            <div class="flex justify-between items-start mb-3"><div><span class="text-[10px] font-bold text-white bg-emerald-500 px-2 py-1 rounded-md uppercase tracking-wider mb-2 inline-block">${plan.category || 'Lainnya'}</span><h4 class="font-extrabold text-gray-800 text-base">${plan.name}</h4><p class="text-xs font-bold text-gray-500 mt-0.5">Rencana: ${formatRp(plan.amount)} / bln</p></div><button onclick="deleteYearly(${plan.id})" class="text-gray-300 hover:text-red-500"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg></button></div>
             <div class="grid grid-cols-6 gap-1.5 mb-4">${monthsHtml}</div>
-            
-            <div class="grid grid-cols-2 gap-2 mt-4">
-              <div class="bg-gray-50 rounded-xl p-3 border border-gray-100">
-                <p class="text-[10px] uppercase font-bold text-gray-400 mb-1">Total Rencana</p>
-                <p class="font-extrabold text-gray-700 text-sm">${formatRp(totalPlan)}</p>
-              </div>
-              <div class="bg-white rounded-xl p-3 border border-gray-200">
-                <p class="text-[10px] uppercase font-bold text-gray-400 mb-1">Total Aktual</p>
-                <input type="number" value="${actual}" onchange="updateYearlyActual(${plan.id}, this.value)" placeholder="0" class="w-full bg-transparent font-extrabold text-sm text-emerald-600 focus:outline-none">
-              </div>
-            </div>
-            
-            <div class="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center">
-              <span class="text-xs font-bold text-gray-500 uppercase tracking-wide">Sisa Budget</span>
-              <span class="text-sm font-extrabold ${selisihClass}">${formatRp(selisih)}</span>
-            </div>
-          </div>
-        `;
+            <div class="grid grid-cols-2 gap-2 mt-4"><div class="bg-gray-50 rounded-xl p-3"><p class="text-[10px] uppercase font-bold text-gray-400 mb-1">Total Rencana</p><p class="font-extrabold text-gray-700 text-sm">${formatRp(totalPlan)}</p></div><div class="bg-white rounded-xl p-3 border border-gray-200"><p class="text-[10px] uppercase font-bold text-gray-400 mb-1">Total Aktual</p><input type="number" value="${actual}" onchange="updateYearlyActual(${plan.id}, this.value)" placeholder="0" class="w-full bg-transparent font-extrabold text-sm text-emerald-600 outline-none"></div></div>
+            <div class="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center"><span class="text-xs font-bold text-gray-500">SISA BUDGET</span><span class="text-sm font-extrabold ${selisihClass}">${formatRp(selisih)}</span></div>
+          </div>`;
       }).join('');
     };
 
-    const updateYearlyActual = (id, value) => {
-      const plan = yearlyPlans.find(p => p.id === id);
-      if (plan) {
-        plan.actual = Number(value) || 0;
-        renderYearly();
-      }
-    };
+    const updateYearlyActual = (id, val) => { const p = yearlyPlans.find(x=>x.id===id); if(p){p.actual=Number(val)||0; renderYearly();} };
+    const renderYearlyMonthsSelector = () => { document.getElementById('year-months-grid').innerHTML = monthShort.map((m, i) => `<button onclick="toggleYearMonth(${i})" class="py-2 rounded-lg text-xs font-bold transition-colors ${selectedYearlyMonths.includes(i) ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-500'}">${m}</button>`).join(''); };
+    const toggleYearMonth = (idx) => { if(selectedYearlyMonths.includes(idx)) selectedYearlyMonths = selectedYearlyMonths.filter(m=>m!==idx); else selectedYearlyMonths.push(idx); renderYearlyMonthsSelector(); };
+    const openYearlyModal = () => { document.getElementById('modal-yearly').classList.remove('hidden'); document.getElementById('year-name').value=''; document.getElementById('year-amount').value=''; document.getElementById('year-category').innerHTML=categoriesList.map(c=>`<option value="${c}">${c}</option>`).join(''); selectedYearlyMonths=[]; renderYearlyMonthsSelector(); };
+    const saveYearly = () => { const n=document.getElementById('year-name').value; const c=document.getElementById('year-category').value; const a=Number(document.getElementById('year-amount').value); if(!n||a<=0||selectedYearlyMonths.length===0)return showToast('⚠️ Lengkapi data'); yearlyPlans.push({id:Date.now(), name:n, category:c, amount:a, actual:0, months:selectedYearlyMonths.sort((x,y)=>x-y)}); renderYearly(); closeModal('modal-yearly'); showToast('✅ Tersimpan'); };
+    const deleteYearly = (id) => { if(confirm('Hapus rencana?')) { yearlyPlans=yearlyPlans.filter(p=>p.id!==id); renderYearly(); showToast('🗑️ Terhapus'); } };
 
-    const renderYearlyMonthsSelector = () => {
-      document.getElementById('year-months-grid').innerHTML = monthShort.map((m, i) => {
-        const isActive = selectedYearlyMonths.includes(i);
-        return `<button onclick="toggleYearMonth(${i})" class="py-2 rounded-lg text-xs font-bold transition-colors ${isActive ? 'bg-emerald-500 text-white shadow-md' : 'bg-gray-100 text-gray-500'}">${m}</button>`;
-      }).join('');
-    };
-
-    const toggleYearMonth = (idx) => {
-      if(selectedYearlyMonths.includes(idx)) selectedYearlyMonths = selectedYearlyMonths.filter(m => m !== idx);
-      else selectedYearlyMonths.push(idx);
-      renderYearlyMonthsSelector();
-    };
-
-    const openYearlyModal = () => {
-      document.getElementById('modal-yearly').classList.remove('hidden');
-      document.getElementById('year-name').value = '';
-      document.getElementById('year-amount').value = '';
-      document.getElementById('year-category').innerHTML = categoriesList.map(c => `<option value="${c}">${c}</option>`).join('');
-      selectedYearlyMonths = [];
-      renderYearlyMonthsSelector();
-    };
-
-    const saveYearly = () => {
-      const name = document.getElementById('year-name').value;
-      const category = document.getElementById('year-category').value;
-      const amount = Number(document.getElementById('year-amount').value);
-      if(!name || amount <= 0 || selectedYearlyMonths.length === 0) return showToast('⚠️ Lengkapi semua data');
-      
-      yearlyPlans.push({ id: Date.now(), name, category, amount, actual: 0, months: selectedYearlyMonths.sort((a,b)=>a-b) });
-      renderYearly();
-      closeModal('modal-yearly');
-      showToast('✅ Rencana tahunan ditambahkan!');
-    };
-
-    const deleteYearly = (id) => {
-      if(confirm('Hapus rencana tahunan ini?')) {
-        yearlyPlans = yearlyPlans.filter(p => p.id !== id);
-        renderYearly();
-        showToast('🗑️ Rencana dihapus');
-      }
-    };
-
-    // FITUR BARU: SIMPAN KE GOOGLE SHEETS
-    const saveYearlyData = async () => {
-      showToast('⏳ Menyimpan ke Cloud...');
-      try {
-        await fetch(SCRIPT_URL, {
-          method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'saveYearly',
-            plans: yearlyPlans
-          })
-        });
-        
-        // Tetap simpan di lokal memori sebagai backup
-        localStorage.setItem('yearlyPlansData', JSON.stringify(yearlyPlans));
-        showToast('✅ Rencana Tahunan tersimpan di Cloud!');
-      } catch (error) {
-        showToast('❌ Gagal menyimpan. Periksa koneksi internet.');
-      }
-    };
-
-    // FITUR BARU: SIMPAN TABUNGAN KE GOOGLE SHEETS
-    const saveSavingsData = async (silent = false) => {
-      if (!silent) showToast('⏳ Menyimpan Target Tabungan...');
-      try {
-        await fetch(SCRIPT_URL, {
-          method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'saveSavings', savings: savingsGoals })
-        });
-        localStorage.setItem('savingsData', JSON.stringify(savingsGoals));
-        if (!silent) showToast('✅ Target Tabungan tersimpan di Cloud!');
-      } catch (error) {
-        if (!silent) showToast('❌ Gagal menyimpan Tabungan.');
-      }
-    };
-
-    // FITUR BARU: TARIK DARI GOOGLE SHEETS SAAT APLIKASI DIBUKA
-    const loadYearlyFromCloud = async () => {
-      try {
-        const response = await fetch(SCRIPT_URL + '?action=getYearly');
-        const data = await response.json();
-        
-        if (data && data.length > 0) {
-           yearlyPlans = data;
-           localStorage.setItem('yearlyPlansData', JSON.stringify(yearlyPlans)); // Update backup memori
-           renderYearly();
-           handleMonthChange(true); // Sinkronisasikan juga ke tab Bulanan
-           showToast('🔄 Data Rencana disinkronkan');
-        }
-      } catch (error) {
-        console.log("Menggunakan memori lokal (Cloud gagal dimuat).");
-      }
-    };
-
-    // FITUR BARU: TARIK TABUNGAN DARI GOOGLE SHEETS
-    const loadSavingsFromCloud = async () => {
-      try {
-        const response = await fetch(SCRIPT_URL + '?action=getSavings');
-        const data = await response.json();
-        
-        if (data && data.length > 0) {
-           savingsGoals = data;
-           localStorage.setItem('savingsData', JSON.stringify(savingsGoals));
-           renderSavings();
-        }
-      } catch (error) {
-        console.log("Gagal memuat tabungan dari Cloud.");
-      }
-    };
+    const saveYearlyData = async () => { showToast('⏳ Menyimpan ke Cloud...'); try{ await fetch(SCRIPT_URL, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'saveYearly',plans:yearlyPlans})}); localStorage.setItem('yearlyPlansData', JSON.stringify(yearlyPlans)); showToast('✅ Rencana tersimpan di Cloud!'); }catch(e){showToast('❌ Gagal koneksi.');} };
+    const saveSavingsData = async (silent=false) => { if(!silent)showToast('⏳ Menyimpan Tabungan...'); try{ await fetch(SCRIPT_URL, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'saveSavings',savings:savingsGoals})}); localStorage.setItem('savingsData', JSON.stringify(savingsGoals)); if(!silent)showToast('✅ Tabungan tersimpan!'); }catch(e){if(!silent)showToast('❌ Gagal.');} };
+    
+    const loadYearlyFromCloud = async () => { try{ const res=await fetch(SCRIPT_URL+'?action=getYearly'); const dat=await res.json(); if(dat && dat.length>0){yearlyPlans=dat;localStorage.setItem('yearlyPlansData',JSON.stringify(yearlyPlans));renderYearly();handleMonthChange(true);showToast('🔄 Rencana sinkron');} }catch(e){console.log("Local used");} };
+    const loadSavingsFromCloud = async () => { try{ const res=await fetch(SCRIPT_URL+'?action=getSavings'); const dat=await res.json(); if(dat && dat.length>0){savingsGoals=dat;localStorage.setItem('savingsData',JSON.stringify(savingsGoals));renderSavings();} }catch(e){console.log("Local used");} };
 
     const closeModal = (id) => document.getElementById(id).classList.add('hidden');
 
-    // --- INIT ---
     window.onload = () => {
-      // Set dropdowns
-      const mSel = document.getElementById('select-month');
-      const ySel = document.getElementById('select-year');
-      const now = new Date();
-      
+      const mSel = document.getElementById('select-month'); const ySel = document.getElementById('select-year'); const now = new Date();
       monthNames.forEach((m, i) => mSel.innerHTML += `<option value="${i}" ${i === now.getMonth() ? 'selected' : ''}>${m}</option>`);
       [now.getFullYear()-1, now.getFullYear(), now.getFullYear()+1].forEach(y => ySel.innerHTML += `<option value="${y}" ${y === now.getFullYear() ? 'selected' : ''}>${y}</option>`);
 
-      renderDashboard(); // Memanggil render grafik di awal
-      
-      // Menginisiasi daftar pengeluaran sekaligus menarik rencana bulan ini
-      handleMonthChange(true); 
-      
-      renderMonthlySavings(); 
-      renderSavings();
-      renderYearly();
-
-      // Memicu penarikan data Cloud di belakang layar
-      loadYearlyFromCloud();
-      loadSavingsFromCloud();
+      renderDashboard(); handleMonthChange(true); renderMonthlySavings(); renderSavings(); renderYearly(); performSearch();
+      loadYearlyFromCloud(); loadSavingsFromCloud();
     };
   </script>
 </body>
