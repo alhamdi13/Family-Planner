@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Perencana Keuangan Keluarga</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Menambahkan Chart.js untuk Grafik Donat -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -29,7 +31,7 @@
 
   <!-- Header -->
   <header class="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white p-4 shadow-lg flex-shrink-0 z-10">
-    <h1 class="text-xl font-bold text-center">💰 Perencana Keuangan Keluarga</h1>
+    <h1 class="text-xl font-bold text-center">💰 Perencana Keuangan</h1>
     
     <!-- User Toggle -->
     <div class="mt-4 flex justify-center bg-emerald-700 p-1 rounded-lg max-w-[200px] mx-auto shadow-inner border border-emerald-800">
@@ -72,17 +74,24 @@
           </div>
           <div class="bg-red-50 rounded-xl p-4 text-center border border-red-100">
             <p class="text-xs text-gray-500 mb-1">Total Pengeluaran</p>
-            <p class="text-lg font-bold text-red-600">Rp 1.040.000</p>
+            <p id="dash-total-pengeluaran" class="text-lg font-bold text-red-600">Rp 0</p>
           </div>
         </div>
-        <div class="bg-blue-50 rounded-xl p-4 text-center border border-blue-100">
-          <p class="text-xs text-gray-500 mb-1">Rata-rata Pengeluaran Bulanan</p>
-          <p class="text-xl font-bold text-blue-600">Rp 1.040.000</p>
+      </div>
+
+      <!-- GRAFIK DONAT KATEGORI -->
+      <div class="bg-white rounded-2xl p-5 card-shadow">
+        <h3 class="font-semibold text-gray-800 mb-4">🍩 Pengeluaran Bulan Ini</h3>
+        <div class="relative w-full h-48 mb-2">
+          <canvas id="expenseChart"></canvas>
+        </div>
+        <div id="chart-legend" class="mt-4 space-y-2">
+          <!-- Legend disuntikkan dari JS -->
         </div>
       </div>
 
       <div class="bg-white rounded-2xl p-5 card-shadow">
-        <h3 class="font-semibold text-gray-800 mb-3">📈 Rekap Per Bulan</h3>
+        <h3 class="font-semibold text-gray-800 mb-3">📈 Rekap Per Bulan (Histori)</h3>
         <div class="space-y-2" id="dash-months">
           <!-- Rendered via JS -->
         </div>
@@ -125,7 +134,19 @@
           <!-- Rendered via JS -->
         </div>
 
-        <div class="mt-5 pt-4 border-t-2 border-dashed border-gray-200">
+        <!-- SEKSI BARU: ALOKASI TABUNGAN -->
+        <hr class="border-gray-100 my-6 border-2 border-dashed">
+        
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-bold text-gray-800 text-lg">💰 Alokasi Tabungan</h3>
+          <button onclick="addMonthlySavingRow()" class="bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors">+ Tambah</button>
+        </div>
+
+        <div id="monthly-savings-list" class="space-y-3 mb-2">
+          <!-- Rendered via JS -->
+        </div>
+
+        <div class="mt-6 pt-4 border-t-2 border-dashed border-gray-200">
           <div class="grid grid-cols-3 gap-2 text-center">
             <div class="bg-gray-50 rounded-xl p-3">
               <p class="text-[10px] uppercase font-bold text-gray-500 mb-1">Total Rencana</p>
@@ -215,6 +236,12 @@
           <input type="text" id="year-name" placeholder="Contoh: SPP Sekolah" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-bold focus:ring-2 focus:ring-emerald-500 outline-none">
         </div>
         <div>
+          <label class="text-xs font-bold text-gray-500 mb-1.5 block uppercase tracking-wide">Kategori</label>
+          <select id="year-category" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl font-bold focus:ring-2 focus:ring-emerald-500 outline-none text-gray-600">
+            <!-- Rendered via JS -->
+          </select>
+        </div>
+        <div>
           <label class="text-xs font-bold text-gray-500 mb-2 block uppercase tracking-wide">Pilih Bulan Aktivitas</label>
           <div id="year-months-grid" class="grid grid-cols-4 gap-2">
             <!-- Rendered via JS -->
@@ -239,8 +266,23 @@
     const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
     const monthShort = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
     
+    // Daftar Kategori Standar
+    const categoriesList = [
+      'Makanan & Minuman', 
+      'Transportasi (Bensin/Tol)', 
+      'Tagihan Rumah (Listrik/Air)', 
+      'Pendidikan & Anak', 
+      'Pakaian & Perawatan', 
+      'Hiburan & Liburan', 
+      'Cicilan & Utang',
+      'Lainnya'
+    ];
+    const categoryColors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#64748b', '#cbd5e1'];
+    
+    let chartInstance = null;
     let currentUser = 'Suami';
-    let expenses = [{ id: Date.now(), name: '', planned: '', actual: '' }];
+    let expenses = [{ id: Date.now(), name: '', category: categoriesList[0], planned: '', actual: '' }];
+    let monthlySavings = []; // State baru untuk tabungan bulanan
     let savingsGoals = [
       { id: 1, name: 'Jepang', target: 24000000, collected: 5150000 },
       { id: 2, name: 'Umrah', target: 30000000, collected: 8250000 },
@@ -249,9 +291,9 @@
       { id: 5, name: 'Mobil', target: 25000000, collected: 5550000 }
     ];
     let yearlyPlans = [
-      { id: 1, name: 'SPP Akhtar', amount: 450000, months: [0, 1, 2, 3, 4, 5, 11] },
-      { id: 2, name: 'Antar Jemput', amount: 500000, months: [0, 1, 2, 3, 4, 5, 11] },
-      { id: 3, name: 'Biaya Pendidikan Kls.6', amount: 1500000, months: [1, 2, 3] }
+      { id: 1, name: 'SPP Akhtar', category: 'Pendidikan & Anak', amount: 450000, actual: 1350000, months: [0, 1, 2, 3, 4, 5, 11] },
+      { id: 2, name: 'Antar Jemput', category: 'Transportasi (Bensin/Tol)', amount: 500000, actual: 1500000, months: [0, 1, 2, 3, 4, 5, 11] },
+      { id: 3, name: 'Biaya Pendidikan Kls.6', category: 'Pendidikan & Anak', amount: 1500000, actual: 0, months: [1, 2, 3] }
     ];
     let selectedYearlyMonths = [];
 
@@ -279,6 +321,10 @@
           btn.className = 'tab-btn flex-1 min-w-max px-4 py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 bg-gray-100 text-gray-500 hover:bg-gray-200';
         }
       });
+
+      if (tabId === 'dashboard') {
+        renderDashboard(); // Update chart setiap kali dashboard dibuka
+      }
     };
 
     // --- USER TOGGLE ---
@@ -304,12 +350,12 @@
       calculateMonthly();
     };
 
-    // --- DASHBOARD RENDER ---
+    // --- DASHBOARD RENDER & CHART ---
     const renderDashboard = () => {
       document.getElementById('dash-year').innerText = new Date().getFullYear();
-      let html = '';
       
-      // Mock data like react version
+      // Update rekap bulanan mock
+      let html = '';
       [0, 1].forEach(m => {
         html += `
           <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
@@ -329,12 +375,126 @@
           </div>`;
       });
       document.getElementById('dash-months').innerHTML = html;
+
+      // === PROSES DATA GRAFIK DONAT ===
+      // Menggabungkan total aktual pengeluaran dan tabungan bulanan
+      const totalActualExp = expenses.reduce((sum, e) => sum + (Number(e.actual) || 0), 0);
+      const totalActualSav = monthlySavings.reduce((sum, s) => sum + (Number(s.actual) || 0), 0);
+      document.getElementById('dash-total-pengeluaran').innerText = formatRp(totalActualExp + totalActualSav);
+
+      // Mengumpulkan total per kategori dari tab 'Bulanan' saat ini
+      const categoryTotals = {};
+      categoriesList.forEach(c => categoryTotals[c] = 0);
+      categoryTotals['Tabungan'] = totalActualSav; // Tambahkan kategori khusus tabungan di grafik
+      
+      expenses.forEach(e => {
+        if (e.actual) {
+          const cat = e.category || 'Lainnya';
+          categoryTotals[cat] = (categoryTotals[cat] || 0) + Number(e.actual);
+        }
+      });
+
+      // Memfilter kategori yang ada nilainya saja
+      const activeLabels = [];
+      const activeData = [];
+      const activeColors = [];
+      let legendHtml = '';
+
+      // Render Kategori Pengeluaran
+      categoriesList.forEach((cat, index) => {
+        if (categoryTotals[cat] > 0) {
+          activeLabels.push(cat);
+          activeData.push(categoryTotals[cat]);
+          activeColors.push(categoryColors[index]);
+          
+          legendHtml += `
+            <div class="flex justify-between items-center text-sm">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full" style="background-color: ${categoryColors[index]}"></span>
+                <span class="text-gray-600">${cat}</span>
+              </div>
+              <span class="font-bold text-gray-800">${formatRp(categoryTotals[cat])}</span>
+            </div>
+          `;
+        }
+      });
+
+      // Render Kategori Tabungan jika ada
+      if (categoryTotals['Tabungan'] > 0) {
+        activeLabels.push('Tabungan');
+        activeData.push(categoryTotals['Tabungan']);
+        activeColors.push('#3b82f6'); // Warna biru untuk tabungan
+        
+        legendHtml += `
+          <div class="flex justify-between items-center text-sm mt-2 pt-2 border-t border-gray-100">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+              <span class="font-bold text-blue-600">Alokasi Tabungan</span>
+            </div>
+            <span class="font-bold text-blue-600">${formatRp(categoryTotals['Tabungan'])}</span>
+          </div>
+        `;
+      }
+
+      document.getElementById('chart-legend').innerHTML = legendHtml || '<p class="text-center text-xs text-gray-400 mt-4">Belum ada pengeluaran yang dicatat bulan ini.</p>';
+
+      // Render ulang Chart.js
+      const ctx = document.getElementById('expenseChart');
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+
+      // Jika data kosong, tampilkan grafik abu-abu kosong
+      if (activeData.length === 0) {
+        chartInstance = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: ['Belum ada data'],
+            datasets: [{ data: [1], backgroundColor: ['#e5e7eb'], borderWidth: 0 }]
+          },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: false } }, cutout: '75%' }
+        });
+        return;
+      }
+
+      // Render grafik asli jika ada data
+      chartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: activeLabels,
+          datasets: [{
+            data: activeData,
+            backgroundColor: activeColors,
+            borderWidth: 2,
+            borderColor: '#ffffff',
+            hoverOffset: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '70%',
+          plugins: {
+            legend: { display: false }, // Disembunyikan karena legend html custom lebih rapi
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  let label = context.label || '';
+                  if (label) label += ': ';
+                  if (context.raw !== null) label += formatRp(context.raw);
+                  return label;
+                }
+              }
+            }
+          }
+        }
+      });
     };
 
     // --- MONTHLY LOGIC ---
     const renderExpenses = () => {
       const list = document.getElementById('expense-list');
-      list.innerHTML = expenses.map((exp, index) => `
+      list.innerHTML = expenses.map((exp) => `
         <div class="bg-gray-50 border border-gray-100 rounded-xl p-3 space-y-2">
           <div class="flex justify-between items-center">
             <input type="text" value="${exp.name}" oninput="updateExpense(${exp.id}, 'name', this.value)" placeholder="Nama pengeluaran..." class="flex-1 bg-transparent font-bold text-gray-800 focus:outline-none placeholder-gray-400">
@@ -342,7 +502,15 @@
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
             </button>
           </div>
-          <div class="grid grid-cols-2 gap-2">
+          
+          <!-- Dropdown Kategori -->
+          <div>
+            <select onchange="updateExpense(${exp.id}, 'category', this.value)" class="w-full p-2 bg-white border border-gray-200 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-emerald-500 outline-none text-gray-600">
+              ${categoriesList.map(cat => `<option value="${cat}" ${exp.category === cat ? 'selected' : ''}>${cat}</option>`).join('')}
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 mt-1">
             <div>
               <label class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Rencana</label>
               <input type="number" value="${exp.planned}" oninput="updateExpense(${exp.id}, 'planned', this.value)" placeholder="0" class="w-full p-2 bg-white border border-gray-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-emerald-500 outline-none">
@@ -357,13 +525,13 @@
     };
 
     const addExpenseRow = () => {
-      expenses.push({ id: Date.now(), name: '', planned: '', actual: '' });
+      expenses.push({ id: Date.now(), name: '', category: categoriesList[0], planned: '', actual: '' });
       renderExpenses();
     };
 
     const removeExpenseRow = (id) => {
       expenses = expenses.filter(e => e.id !== id);
-      if (expenses.length === 0) expenses.push({ id: Date.now(), name: '', planned: '', actual: '' });
+      if (expenses.length === 0) expenses.push({ id: Date.now(), name: '', category: categoriesList[0], planned: '', actual: '' });
       renderExpenses();
       calculateMonthly();
     };
@@ -376,13 +544,78 @@
       }
     };
 
+    // --- MONTHLY SAVINGS LOGIC (NEW) ---
+    const renderMonthlySavings = () => {
+      const list = document.getElementById('monthly-savings-list');
+      if (monthlySavings.length === 0) {
+        list.innerHTML = '<p class="text-center text-xs text-gray-400 font-medium">Belum ada alokasi tabungan bulan ini.</p>';
+        return;
+      }
+
+      list.innerHTML = monthlySavings.map(ms => {
+        const goalOptions = savingsGoals.map(g => `<option value="${g.id}" ${ms.goalId == g.id ? 'selected' : ''}>${g.name}</option>`).join('');
+        
+        return `
+          <div class="bg-blue-50/50 border border-blue-100 rounded-xl p-3 space-y-2">
+            <div class="flex justify-between items-center">
+              <select onchange="updateMonthlySaving(${ms.id}, 'goalId', this.value)" class="flex-1 bg-transparent font-bold text-blue-800 focus:outline-none p-1 border-b border-blue-200">
+                <option value="" disabled ${!ms.goalId ? 'selected' : ''}>Pilih peruntukan tabungan...</option>
+                ${goalOptions}
+              </select>
+              <button onclick="removeMonthlySavingRow(${ms.id})" class="text-gray-400 hover:text-red-500 p-1 ml-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              </button>
+            </div>
+            <div class="grid grid-cols-2 gap-2 mt-2">
+              <div>
+                <label class="text-[10px] uppercase font-bold text-blue-400 tracking-wider">Rencana</label>
+                <input type="number" value="${ms.planned}" oninput="updateMonthlySaving(${ms.id}, 'planned', this.value)" placeholder="0" class="w-full p-2 bg-white border border-blue-100 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-blue-500 outline-none">
+              </div>
+              <div>
+                <label class="text-[10px] uppercase font-bold text-blue-400 tracking-wider">Aktual</label>
+                <input type="number" value="${ms.actual}" oninput="updateMonthlySaving(${ms.id}, 'actual', this.value)" placeholder="0" class="w-full p-2 bg-white border border-blue-200 rounded-lg text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none text-blue-600">
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    };
+
+    const addMonthlySavingRow = () => {
+      monthlySavings.push({ id: Date.now(), goalId: '', planned: '', actual: '' });
+      renderMonthlySavings();
+      calculateMonthly();
+    };
+
+    const removeMonthlySavingRow = (id) => {
+      monthlySavings = monthlySavings.filter(s => s.id !== id);
+      renderMonthlySavings();
+      calculateMonthly();
+    };
+
+    const updateMonthlySaving = (id, field, value) => {
+      const sav = monthlySavings.find(s => s.id === id);
+      if (sav) {
+        sav[field] = value;
+        calculateMonthly();
+      }
+    };
+
     const calculateMonthly = () => {
       const saldo = Number(document.getElementById('input-saldo').value) || 0;
       const pemasukan = currentUser === 'Suami' ? (Number(document.getElementById('input-pemasukan').value) || 0) : 0;
       
       const totalAvailable = saldo + pemasukan;
-      const totalPlanned = expenses.reduce((sum, e) => sum + (Number(e.planned) || 0), 0);
-      const totalActual = expenses.reduce((sum, e) => sum + (Number(e.actual) || 0), 0);
+      
+      // Hitung pengeluaran + tabungan
+      const totalPlannedExp = expenses.reduce((sum, e) => sum + (Number(e.planned) || 0), 0);
+      const totalActualExp = expenses.reduce((sum, e) => sum + (Number(e.actual) || 0), 0);
+      
+      const totalPlannedSav = monthlySavings.reduce((sum, s) => sum + (Number(s.planned) || 0), 0);
+      const totalActualSav = monthlySavings.reduce((sum, s) => sum + (Number(s.actual) || 0), 0);
+
+      const totalPlanned = totalPlannedExp + totalPlannedSav;
+      const totalActual = totalActualExp + totalActualSav;
       const remaining = totalAvailable - totalActual;
 
       document.getElementById('total-tersedia').innerText = formatRp(totalAvailable);
@@ -418,8 +651,11 @@
             method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               tanggal: new Date().toISOString().split('T')[0],
-              pengguna: currentUser, jenis: 'Pemasukan', kategori: 'Pemasukan Rutin', nominal: pemasukan,
-              keterangan: `Periode: ${monthNames[mSel]} ${ySel}`
+              pengguna: currentUser, 
+              jenis: 'Pemasukan', 
+              kategori: 'Gaji/Pemasukan Utama', // Kolom kategori di sheet
+              nominal: pemasukan,
+              keterangan: `Periode: ${monthNames[mSel]} ${ySel}` // Keterangan di sheet
             })
           });
         }
@@ -430,12 +666,45 @@
               method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 tanggal: new Date().toISOString().split('T')[0],
-                pengguna: currentUser, jenis: 'Pengeluaran', kategori: exp.name, nominal: exp.actual,
-                keterangan: `Periode: ${monthNames[mSel]} ${ySel} | Rencana: ${exp.planned || 0}`
+                pengguna: currentUser, 
+                jenis: 'Pengeluaran', 
+                kategori: exp.category, // Memasukkan pilihan kategori ke spreadsheet
+                nominal: exp.actual,
+                keterangan: `${exp.name} | Rencana: ${exp.planned || 0}` // Nama pengeluaran pindah ke keterangan
               })
             });
           }
         }
+
+        // Simpan Tabungan Bulanan ke Spreadsheet & Update Progress
+        for (const ms of monthlySavings) {
+          if (ms.goalId && ms.actual) {
+            const goal = savingsGoals.find(g => g.id == ms.goalId);
+            if (goal) {
+              // 1. Catat ke Spreadsheet sebagai transaksi Tabungan
+              await fetch(SCRIPT_URL, {
+                method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  tanggal: new Date().toISOString().split('T')[0],
+                  pengguna: currentUser, 
+                  jenis: 'Tabungan', 
+                  kategori: 'Alokasi Tabungan', 
+                  nominal: ms.actual,
+                  keterangan: `Target: ${goal.name} | Rencana: ${ms.planned || 0}`
+                })
+              });
+              
+              // 2. Tambahkan saldo "Terkumpul" ke data Tabungan
+              goal.collected = (Number(goal.collected) || 0) + Number(ms.actual);
+            }
+          }
+        }
+        
+        // Reset alokasi tabungan setelah sukses disimpan, dan perbarui halaman Tabungan
+        monthlySavings = [];
+        renderMonthlySavings();
+        renderSavings(); 
+
         showToast('✅ Semua data berhasil disimpan!');
       } catch (error) {
         showToast('❌ Gagal menyimpan data. Periksa koneksi.');
@@ -512,7 +781,11 @@
     // --- YEARLY LOGIC ---
     const renderYearly = () => {
       document.getElementById('yearly-list').innerHTML = yearlyPlans.map(plan => {
-        const total = plan.months.length * plan.amount;
+        const totalPlan = plan.months.length * plan.amount;
+        const actual = plan.actual || 0;
+        const selisih = totalPlan - actual;
+        const selisihClass = selisih >= 0 ? 'text-emerald-600' : 'text-red-600';
+
         const monthsHtml = monthShort.map((name, i) => {
           const isActive = plan.months.includes(i);
           return `<div class="text-center p-1.5 rounded-lg ${isActive ? 'bg-emerald-500 text-white shadow-sm' : 'bg-gray-50 text-gray-400'}"><span class="text-[10px] font-bold block">${name}</span></div>`;
@@ -520,23 +793,44 @@
 
         return `
           <div class="bg-white border-2 border-gray-100 rounded-2xl p-4 hover:border-emerald-100 transition-colors">
-            <div class="flex justify-between items-start mb-4">
+            <div class="flex justify-between items-start mb-3">
               <div>
+                <span class="text-[10px] font-bold text-white bg-emerald-500 px-2 py-1 rounded-md uppercase tracking-wider mb-2 inline-block">${plan.category || 'Lainnya'}</span>
                 <h4 class="font-extrabold text-gray-800 text-base">${plan.name}</h4>
-                <p class="text-xs font-bold text-emerald-600 mt-0.5">${formatRp(plan.amount)} / bulan</p>
+                <p class="text-xs font-bold text-gray-500 mt-0.5">Rencana: ${formatRp(plan.amount)} / bln</p>
               </div>
               <button onclick="deleteYearly(${plan.id})" class="text-gray-300 hover:text-red-500">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
               </button>
             </div>
             <div class="grid grid-cols-6 gap-1.5 mb-4">${monthsHtml}</div>
-            <div class="bg-blue-50 rounded-xl p-3 text-center border border-blue-100">
-              <p class="text-[10px] uppercase font-bold text-blue-400 mb-0.5">Total Per Tahun (${plan.months.length} bln)</p>
-              <p class="font-extrabold text-blue-600 text-sm">${formatRp(total)}</p>
+            
+            <div class="grid grid-cols-2 gap-2 mt-4">
+              <div class="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                <p class="text-[10px] uppercase font-bold text-gray-400 mb-1">Total Rencana</p>
+                <p class="font-extrabold text-gray-700 text-sm">${formatRp(totalPlan)}</p>
+              </div>
+              <div class="bg-white rounded-xl p-3 border border-gray-200">
+                <p class="text-[10px] uppercase font-bold text-gray-400 mb-1">Total Aktual</p>
+                <input type="number" value="${actual}" onchange="updateYearlyActual(${plan.id}, this.value)" placeholder="0" class="w-full bg-transparent font-extrabold text-sm text-emerald-600 focus:outline-none">
+              </div>
+            </div>
+            
+            <div class="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center">
+              <span class="text-xs font-bold text-gray-500 uppercase tracking-wide">Sisa Budget</span>
+              <span class="text-sm font-extrabold ${selisihClass}">${formatRp(selisih)}</span>
             </div>
           </div>
         `;
       }).join('');
+    };
+
+    const updateYearlyActual = (id, value) => {
+      const plan = yearlyPlans.find(p => p.id === id);
+      if (plan) {
+        plan.actual = Number(value) || 0;
+        renderYearly();
+      }
     };
 
     const renderYearlyMonthsSelector = () => {
@@ -556,16 +850,18 @@
       document.getElementById('modal-yearly').classList.remove('hidden');
       document.getElementById('year-name').value = '';
       document.getElementById('year-amount').value = '';
+      document.getElementById('year-category').innerHTML = categoriesList.map(c => `<option value="${c}">${c}</option>`).join('');
       selectedYearlyMonths = [];
       renderYearlyMonthsSelector();
     };
 
     const saveYearly = () => {
       const name = document.getElementById('year-name').value;
+      const category = document.getElementById('year-category').value;
       const amount = Number(document.getElementById('year-amount').value);
       if(!name || amount <= 0 || selectedYearlyMonths.length === 0) return showToast('⚠️ Lengkapi semua data');
       
-      yearlyPlans.push({ id: Date.now(), name, amount, months: selectedYearlyMonths.sort((a,b)=>a-b) });
+      yearlyPlans.push({ id: Date.now(), name, category, amount, actual: 0, months: selectedYearlyMonths.sort((a,b)=>a-b) });
       renderYearly();
       closeModal('modal-yearly');
       showToast('✅ Rencana tahunan ditambahkan!');
@@ -591,8 +887,9 @@
       monthNames.forEach((m, i) => mSel.innerHTML += `<option value="${i}" ${i === now.getMonth() ? 'selected' : ''}>${m}</option>`);
       [now.getFullYear()-1, now.getFullYear(), now.getFullYear()+1].forEach(y => ySel.innerHTML += `<option value="${y}" ${y === now.getFullYear() ? 'selected' : ''}>${y}</option>`);
 
-      renderDashboard();
+      renderDashboard(); // Memanggil render grafik di awal
       renderExpenses();
+      renderMonthlySavings(); // Tambahkan inisialisasi ini
       renderSavings();
       renderYearly();
     };
