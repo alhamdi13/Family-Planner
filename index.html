@@ -70,12 +70,16 @@
         <div class="grid grid-cols-2 gap-3 mb-4">
           <div class="bg-emerald-50 rounded-xl p-4 text-center border border-emerald-100">
             <p class="text-xs text-gray-500 mb-1">Total Pemasukan</p>
-            <p class="text-lg font-bold text-emerald-600">Rp 5.700.000</p>
+            <p id="dash-total-pemasukan" class="text-lg font-bold text-emerald-600">Rp 0</p>
           </div>
           <div class="bg-red-50 rounded-xl p-4 text-center border border-red-100">
             <p class="text-xs text-gray-500 mb-1">Total Pengeluaran</p>
             <p id="dash-total-pengeluaran" class="text-lg font-bold text-red-600">Rp 0</p>
           </div>
+        </div>
+        <div class="bg-blue-50 rounded-xl p-4 text-center border border-blue-100">
+          <p class="text-xs text-gray-500 mb-1">Rata-rata Pengeluaran Bulanan</p>
+          <p id="dash-rata-pengeluaran" class="text-xl font-bold text-blue-600">Rp 0</p>
         </div>
       </div>
 
@@ -292,7 +296,10 @@
     let currentUser = 'Suami';
     let expenses = [{ id: Date.now(), name: '', category: categoriesList[0], planned: '', actual: '' }];
     let monthlySavings = []; // State baru untuk tabungan bulanan
-    let savingsGoals = [
+    
+    // Tarik data tabungan dari penyimpanan lokal
+    const savedSavings = localStorage.getItem('savingsData');
+    let savingsGoals = savedSavings ? JSON.parse(savedSavings) : [
       { id: 1, name: 'Jepang', target: 24000000, collected: 5150000 },
       { id: 2, name: 'Umrah', target: 30000000, collected: 8250000 },
       { id: 3, name: 'Haji', target: 7000000, collected: 700000 },
@@ -354,55 +361,104 @@
         btnIstri.className = 'flex-1 text-xs font-bold py-1.5 rounded-md transition-all text-emerald-100 hover:text-white';
         
         // Buka akses input untuk Suami
-        inputSaldo.disabled = false;
-        inputPemasukan.disabled = false;
-        inputSaldo.classList.remove('bg-gray-200', 'text-gray-500', 'cursor-not-allowed');
-        inputPemasukan.classList.remove('bg-gray-200', 'text-gray-500', 'cursor-not-allowed');
+        if(inputSaldo) {
+          inputSaldo.disabled = false;
+          inputSaldo.classList.remove('bg-gray-200', 'text-gray-500', 'cursor-not-allowed');
+        }
+        if(inputPemasukan) {
+          inputPemasukan.disabled = false;
+          inputPemasukan.classList.remove('bg-gray-200', 'text-gray-500', 'cursor-not-allowed');
+        }
       } else {
         btnIstri.className = 'flex-1 text-xs font-bold py-1.5 rounded-md transition-all bg-white text-emerald-700 shadow';
         btnSuami.className = 'flex-1 text-xs font-bold py-1.5 rounded-md transition-all text-emerald-100 hover:text-white';
         
         // Kunci input untuk Istri, hanya lihat total dana yang diisi Suami
-        inputSaldo.disabled = true;
-        inputPemasukan.disabled = true;
-        inputSaldo.classList.add('bg-gray-200', 'text-gray-500', 'cursor-not-allowed');
-        inputPemasukan.classList.add('bg-gray-200', 'text-gray-500', 'cursor-not-allowed');
+        if(inputSaldo) {
+          inputSaldo.disabled = true;
+          inputSaldo.classList.add('bg-gray-200', 'text-gray-500', 'cursor-not-allowed');
+        }
+        if(inputPemasukan) {
+          inputPemasukan.disabled = true;
+          inputPemasukan.classList.add('bg-gray-200', 'text-gray-500', 'cursor-not-allowed');
+        }
       }
       calculateMonthly();
     };
 
     // --- DASHBOARD RENDER & CHART ---
     const renderDashboard = () => {
-      document.getElementById('dash-year').innerText = new Date().getFullYear();
+      // Ambil tahun dan bulan yang sedang aktif di tab Bulanan
+      const ySel = document.getElementById('select-year') ? document.getElementById('select-year').value : new Date().getFullYear();
+      const mSel = document.getElementById('select-month') ? document.getElementById('select-month').value : new Date().getMonth();
+      document.getElementById('dash-year').innerText = ySel;
       
-      // Update rekap bulanan mock
-      let html = '';
-      [0, 1].forEach(m => {
-        html += `
-          <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
-            <span class="font-medium text-gray-700">${monthNames[m]}</span>
-            <div class="text-right flex items-center gap-2">
-              <span class="text-sm font-semibold text-emerald-600">+${formatRp(5700000)}</span>
-              <span class="text-gray-300">|</span>
-              <span class="text-sm font-semibold text-red-600">-${formatRp(1040000)}</span>
-            </div>
-          </div>`;
-      });
-      [2, 3, 4].forEach(m => {
-        html += `
-          <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100 opacity-50">
-            <span class="font-medium text-gray-400">${monthNames[m]}</span>
-            <span class="text-xs text-gray-400 font-medium bg-gray-200 px-2 py-1 rounded-md">Belum ada data</span>
-          </div>`;
-      });
-      document.getElementById('dash-months').innerHTML = html;
+      // Ambil Histori dari penyimpanan lokal
+      const history = JSON.parse(localStorage.getItem('monthlyHistory') || '{}');
 
-      // === PROSES DATA GRAFIK DONAT ===
-      // Menggabungkan total aktual pengeluaran dan tabungan bulanan
+      // Kalkulasi nilai 'live' dari tab bulanan saat ini
+      const liveSaldo = Number(document.getElementById('input-saldo')?.value) || 0;
+      const livePemasukan = Number(document.getElementById('input-pemasukan')?.value) || 0;
+      const liveIncome = liveSaldo + livePemasukan;
       const totalActualExp = expenses.reduce((sum, e) => sum + (Number(e.actual) || 0), 0);
       const totalActualSav = monthlySavings.reduce((sum, s) => sum + (Number(s.actual) || 0), 0);
-      document.getElementById('dash-total-pengeluaran').innerText = formatRp(totalActualExp + totalActualSav);
+      const liveExp = totalActualExp + totalActualSav;
 
+      let totalYearIncome = 0;
+      let totalYearExpense = 0;
+      let activeMonthsCount = 0;
+      let html = '';
+
+      // Bangun rekap histori 12 bulan
+      for (let m = 0; m < 12; m++) {
+        let mIncome = 0;
+        let mExpense = 0;
+        let hasData = false;
+
+        if (m == mSel) {
+          // Prioritaskan nilai yang sedang diketik (Live) untuk bulan yang sedang aktif
+          mIncome = liveIncome;
+          mExpense = liveExp;
+          if (mIncome > 0 || mExpense > 0 || history[`${ySel}_${m}`]) hasData = true;
+        } else if (history[`${ySel}_${m}`]) {
+          // Gunakan histori untuk bulan lainnya
+          mIncome = history[`${ySel}_${m}`].income || 0;
+          mExpense = history[`${ySel}_${m}`].expense || 0;
+          hasData = true;
+        }
+
+        if (hasData) {
+          totalYearIncome += mIncome;
+          totalYearExpense += mExpense;
+          activeMonthsCount++;
+
+          html += `
+            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
+              <span class="font-medium text-gray-700">${monthNames[m]}</span>
+              <div class="text-right flex items-center gap-2">
+                <span class="text-sm font-semibold text-emerald-600">+${formatRp(mIncome)}</span>
+                <span class="text-gray-300">|</span>
+                <span class="text-sm font-semibold text-red-600">-${formatRp(mExpense)}</span>
+              </div>
+            </div>`;
+        } else {
+          html += `
+            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100 opacity-50">
+              <span class="font-medium text-gray-400">${monthNames[m]}</span>
+              <span class="text-xs text-gray-400 font-medium bg-gray-200 px-2 py-1 rounded-md">Belum ada data</span>
+            </div>`;
+        }
+      }
+
+      // Update angka ringkasan di dashboard
+      document.getElementById('dash-months').innerHTML = html;
+      document.getElementById('dash-total-pemasukan').innerText = formatRp(totalYearIncome);
+      document.getElementById('dash-total-pengeluaran').innerText = formatRp(totalYearExpense);
+      
+      const avgExp = activeMonthsCount > 0 ? totalYearExpense / activeMonthsCount : 0;
+      document.getElementById('dash-rata-pengeluaran').innerText = formatRp(avgExp);
+
+      // === PROSES DATA GRAFIK DONAT ===
       // Mengumpulkan total per kategori dari tab 'Bulanan' saat ini
       const categoryTotals = {};
       categoriesList.forEach(c => categoryTotals[c] = 0);
@@ -728,23 +784,32 @@
       const totalActual = totalActualExp + totalActualSav;
       const remaining = totalAvailable - totalActual;
 
-      document.getElementById('total-tersedia').innerText = formatRp(totalAvailable);
-      document.getElementById('total-rencana').innerText = formatRp(totalPlanned);
-      document.getElementById('total-aktual').innerText = formatRp(totalActual);
-      document.getElementById('total-sisa').innerText = formatRp(remaining);
+      const totalTersediaEl = document.getElementById('total-tersedia');
+      if (totalTersediaEl) totalTersediaEl.innerText = formatRp(totalAvailable);
+      
+      const totalRencanaEl = document.getElementById('total-rencana');
+      if (totalRencanaEl) totalRencanaEl.innerText = formatRp(totalPlanned);
+      
+      const totalAktualEl = document.getElementById('total-aktual');
+      if (totalAktualEl) totalAktualEl.innerText = formatRp(totalActual);
+      
+      const totalSisaEl = document.getElementById('total-sisa');
+      if (totalSisaEl) totalSisaEl.innerText = formatRp(remaining);
 
       const boxSisa = document.getElementById('box-sisa');
       const labelSisa = document.getElementById('label-sisa');
       const textSisa = document.getElementById('total-sisa');
 
-      if (remaining >= 0) {
-        boxSisa.className = 'rounded-xl p-3 border bg-emerald-50 border-emerald-100';
-        labelSisa.className = 'text-[10px] uppercase font-bold mb-1 text-emerald-500';
-        textSisa.className = 'font-bold text-sm text-emerald-600';
-      } else {
-        boxSisa.className = 'rounded-xl p-3 border bg-red-50 border-red-100';
-        labelSisa.className = 'text-[10px] uppercase font-bold mb-1 text-red-500';
-        textSisa.className = 'font-bold text-sm text-red-600';
+      if (boxSisa && labelSisa && textSisa) {
+        if (remaining >= 0) {
+          boxSisa.className = 'rounded-xl p-3 border bg-emerald-50 border-emerald-100';
+          labelSisa.className = 'text-[10px] uppercase font-bold mb-1 text-emerald-500';
+          textSisa.className = 'font-bold text-sm text-emerald-600';
+        } else {
+          boxSisa.className = 'rounded-xl p-3 border bg-red-50 border-red-100';
+          labelSisa.className = 'text-[10px] uppercase font-bold mb-1 text-red-500';
+          textSisa.className = 'font-bold text-sm text-red-600';
+        }
       }
     };
 
@@ -754,6 +819,7 @@
       const mSel = document.getElementById('select-month').value;
       const ySel = document.getElementById('select-year').value;
       const pemasukan = document.getElementById('input-pemasukan').value;
+      const saldo = document.getElementById('input-saldo').value;
 
       try {
         if (currentUser === 'Suami' && Number(pemasukan) > 0) {
@@ -810,10 +876,34 @@
           }
         }
         
-        // Reset alokasi tabungan setelah sukses disimpan, dan perbarui halaman Tabungan
-        monthlySavings = [];
+        // Simpan pembaruan progres tabungan ke Cloud secara otomatis
+        saveSavingsData(true);
+        
+        // Simpan Histori Total Bulan Ini ke Memori Lokal untuk Dashboard
+        const totalActualExp = expenses.reduce((sum, e) => sum + (Number(e.actual) || 0), 0);
+        const totalActualSav = monthlySavings.reduce((sum, s) => sum + (Number(s.actual) || 0), 0);
+        
+        let history = JSON.parse(localStorage.getItem('monthlyHistory') || '{}');
+        history[`${ySel}_${mSel}`] = {
+            income: (Number(saldo) || 0) + (Number(pemasukan) || 0),
+            expense: totalActualExp + totalActualSav
+        };
+        localStorage.setItem('monthlyHistory', JSON.stringify(history));
+
+        // Reset nilai "aktual" pengeluaran dan tabungan agar siap diisi lagi
+        expenses.forEach(exp => exp.actual = '');
+        monthlySavings.forEach(ms => ms.actual = '');
+        
+        // Opsional: Reset input pemasukan juga
+        if (document.getElementById('input-pemasukan')) {
+            document.getElementById('input-pemasukan').value = '';
+        }
+        
+        // Perbarui semua tampilan UI dan kalkulasi Sisa Dana
+        renderExpenses();
         renderMonthlySavings();
         renderSavings(); 
+        calculateMonthly();
 
         showToast('✅ Semua data berhasil disimpan!');
       } catch (error) {
@@ -877,13 +967,15 @@
       savingsGoals.push({ id: Date.now(), name, target, collected });
       renderSavings();
       closeModal('modal-savings');
-      showToast('✅ Target berhasil ditambahkan!');
+      
+      saveSavingsData(); // Sinkronkan ke cloud
     };
 
     const deleteSavings = (id) => {
       if(confirm('Hapus target tabungan ini?')) {
         savingsGoals = savingsGoals.filter(g => g.id !== id);
         renderSavings();
+        saveSavingsData(); // Sinkronkan ke cloud
         showToast('🗑️ Target dihapus');
       }
     };
@@ -1005,6 +1097,21 @@
       }
     };
 
+    // FITUR BARU: SIMPAN TABUNGAN KE GOOGLE SHEETS
+    const saveSavingsData = async (silent = false) => {
+      if (!silent) showToast('⏳ Menyimpan Target Tabungan...');
+      try {
+        await fetch(SCRIPT_URL, {
+          method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'saveSavings', savings: savingsGoals })
+        });
+        localStorage.setItem('savingsData', JSON.stringify(savingsGoals));
+        if (!silent) showToast('✅ Target Tabungan tersimpan di Cloud!');
+      } catch (error) {
+        if (!silent) showToast('❌ Gagal menyimpan Tabungan.');
+      }
+    };
+
     // FITUR BARU: TARIK DARI GOOGLE SHEETS SAAT APLIKASI DIBUKA
     const loadYearlyFromCloud = async () => {
       try {
@@ -1016,10 +1123,26 @@
            localStorage.setItem('yearlyPlansData', JSON.stringify(yearlyPlans)); // Update backup memori
            renderYearly();
            handleMonthChange(true); // Sinkronisasikan juga ke tab Bulanan
-           showToast('🔄 Data Cloud berhasil disinkronkan');
+           showToast('🔄 Data Rencana disinkronkan');
         }
       } catch (error) {
         console.log("Menggunakan memori lokal (Cloud gagal dimuat).");
+      }
+    };
+
+    // FITUR BARU: TARIK TABUNGAN DARI GOOGLE SHEETS
+    const loadSavingsFromCloud = async () => {
+      try {
+        const response = await fetch(SCRIPT_URL + '?action=getSavings');
+        const data = await response.json();
+        
+        if (data && data.length > 0) {
+           savingsGoals = data;
+           localStorage.setItem('savingsData', JSON.stringify(savingsGoals));
+           renderSavings();
+        }
+      } catch (error) {
+        console.log("Gagal memuat tabungan dari Cloud.");
       }
     };
 
@@ -1046,6 +1169,7 @@
 
       // Memicu penarikan data Cloud di belakang layar
       loadYearlyFromCloud();
+      loadSavingsFromCloud();
     };
   </script>
 </body>
