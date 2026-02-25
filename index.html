@@ -234,33 +234,25 @@
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 12000); 
-        
         const timestamp = Date.now();
-        const response = await fetch(`${SCRIPT_URL}?action=getActualSpending&month=${m}&year=${y}&t=${timestamp}`, {
-            signal: controller.signal
-        });
-        
+        const response = await fetch(`${SCRIPT_URL}?action=getActualSpending&month=${m}&year=${y}&t=${timestamp}`, { signal: controller.signal });
         clearTimeout(timeoutId);
 
-        if (!response.ok) throw new Error("Network error");
-        
+        if (!response.ok) throw new Error("Gagal jaringan");
         const data = await response.json();
-        actualsCache = data.categoryTotals || {};
-        currentMonthIncome = data.totalIncome || 0;
         
-        localStorage.setItem(`cache_actual_${y}_${m}`, JSON.stringify(actualsCache));
-        localStorage.setItem(`cache_income_${y}_${m}`, currentMonthIncome);
-        
-        renderMonitoringList();
-        renderDashboard();
+        if (data && data.categoryTotals) {
+            actualsCache = data.categoryTotals;
+            currentMonthIncome = data.totalIncome || 0;
+            localStorage.setItem(`cache_actual_${y}_${m}`, JSON.stringify(actualsCache));
+        }
+
       } catch (e) {
-        console.warn("Menggunakan data lokal");
         actualsCache = JSON.parse(localStorage.getItem(`cache_actual_${y}_${m}`)) || {};
-        currentMonthIncome = Number(localStorage.getItem(`cache_income_${y}_${m}`)) || 0;
+      } finally {
         renderMonitoringList();
         renderDashboard();
-      } finally {
-        document.getElementById('dash-loading')?.classList.add('hidden');
+        if(!silent) document.getElementById('dash-loading')?.classList.add('hidden');
       }
     };
 
@@ -278,10 +270,10 @@
             if(inputSaldo) {
                 inputSaldo.value = sisa > 0 ? sisa : 0;
                 calculateMonthly();
-                showToast('✅ Saldo ditarik');
+                showToast('Saldo berhasil ditarik');
             }
         } else {
-            showToast('⚠️ Data bulan lalu kosong');
+            showToast('Data bulan lalu kosong');
         }
     };
 
@@ -330,7 +322,7 @@
       const catVal = quickCat?.value;
       const nominal = Number(quickNom?.value);
       
-      if(!catVal || !nominal) return showToast('⚠️ Lengkapi data');
+      if(!catVal || !nominal) return showToast('Lengkapi data');
 
       const [jenis, kategori] = catVal.split('|');
       const m = document.getElementById('select-month').value;
@@ -338,9 +330,17 @@
       const monthStr = (Number(m) + 1).toString().padStart(2, '0');
       const tgl = `${y}-${monthStr}-01`; 
 
-      showToast('⏳ Mencatat...');
+      showToast('Mencatat...');
       
       actualsCache[kategori] = (actualsCache[kategori] || 0) + nominal;
+      localStorage.setItem(`cache_actual_${y}_${m}`, JSON.stringify(actualsCache));
+      
+      const totalSpentMonth = Object.values(actualsCache).reduce((s,v)=>s+v, 0);
+      let history = JSON.parse(localStorage.getItem('monthlyHistory') || '{}');
+      const currentInc = history[`${y}_${m}`]?.income || 0;
+      history[`${y}_${m}`] = { income: currentInc, expense: totalSpentMonth };
+      localStorage.setItem('monthlyHistory', JSON.stringify(history));
+
       renderMonitoringList();
       renderDashboard();
 
@@ -351,22 +351,23 @@
         });
         
         if(quickNom) quickNom.value = '';
-        showToast('✅ Berhasil Disimpan!');
-        
+        showToast('Berhasil disimpan');
         setTimeout(() => fetchActualsFromCloud(true), 2000);
       } catch (e) { 
-        showToast('❌ Error Cloud'); 
+        showToast('Tersimpan di sistem lokal'); 
       }
     };
 
     const handleSaveMonthly = async () => {
-      showToast('⏳ Menyimpan kas...');
+      showToast('Menyimpan kas...');
       const mS = document.getElementById('select-month')?.value;
       const yS = document.getElementById('select-year')?.value;
       const pem = document.getElementById('input-pemasukan')?.value;
       const sal = document.getElementById('input-saldo')?.value;
       const monthStr = (Number(mS) + 1).toString().padStart(2, '0');
       const tgl = `${yS}-${monthStr}-01`;
+
+      localStorage.setItem(`inputs_${yS}_${mS}`, JSON.stringify({saldo: sal, pem: pem}));
 
       try {
         if (currentUser === 'Suami' && Number(pem) > 0) {
@@ -379,8 +380,8 @@
         localStorage.setItem('monthlyHistory', JSON.stringify(history));
         
         renderDashboard();
-        showToast('✅ Kas Tersimpan!');
-      } catch (e) { showToast('❌ Gagal Kas'); }
+        showToast('Kas tersimpan');
+      } catch (e) { showToast('Gagal memproses kas'); }
     };
 
     const renderDashboard = () => {
@@ -395,10 +396,11 @@
       if(periodLabel) periodLabel.innerText = `${monthNames[m]} ${y}`;
       if(yearLabel) yearLabel.innerText = y;
 
+      const inputs = JSON.parse(localStorage.getItem(`inputs_${y}_${m}`) || '{"saldo":0, "pem":0}');
+      const currentSaldo = Number(document.getElementById('input-saldo')?.value) || Number(inputs.saldo) || 0;
+      const currentPem = Number(document.getElementById('input-pemasukan')?.value) || Number(inputs.pem) || 0;
+      const totalInMonth = currentSaldo + currentPem;
       const totalSpentMonth = Object.values(actualsCache).reduce((s,v)=>s+v, 0);
-      const saldo = Number(document.getElementById('input-saldo')?.value) || 0;
-      const pms = Number(document.getElementById('input-pemasukan')?.value) || 0;
-      const totalInMonth = saldo + pms;
       
       let history = JSON.parse(localStorage.getItem('monthlyHistory') || '{}');
       history[`${y}_${m}`] = { income: totalInMonth, expense: totalSpentMonth };
@@ -445,14 +447,24 @@
       }
     };
 
+    const handleMonthChange = () => {
+        const y = document.getElementById('select-year').value;
+        const m = document.getElementById('select-month').value;
+        const inputs = JSON.parse(localStorage.getItem(`inputs_${y}_${m}`) || '{"saldo":0, "pem":0}');
+        const inSaldo = document.getElementById('input-saldo');
+        const inPem = document.getElementById('input-pemasukan');
+        if(inSaldo) inSaldo.value = inputs.saldo || '';
+        if(inPem) inPem.value = inputs.pem || '';
+        calculateMonthly();
+        fetchActualsFromCloud();
+    };
+
     const calculateMonthly = () => {
         const s = Number(document.getElementById('input-saldo')?.value) || 0;
         const p = Number(document.getElementById('input-pemasukan')?.value) || 0;
         const totalTersediaEl = document.getElementById('total-tersedia');
         if(totalTersediaEl) totalTersediaEl.innerText = formatRp(s + p);
     };
-
-    const handleMonthChange = () => { fetchActualsFromCloud(); };
 
     const openSavingsModal = () => { document.getElementById('modal-savings')?.classList.remove('hidden'); };
     const saveSavings = () => { 
@@ -507,23 +519,23 @@
         closeModal('modal-yearly'); 
     };
     const saveYearlyData = async () => { 
-        showToast('⏳ Sync Cloud...'); 
+        showToast('Sync Cloud...'); 
         try{ 
             await fetch(SCRIPT_URL, {method:'POST',mode:'no-cors',body:JSON.stringify({action:'saveYearly',plans:yearlyPlans})}); 
             localStorage.setItem('yearlyPlansData', JSON.stringify(yearlyPlans)); 
-            showToast('✅ Sinkron Selesai!'); 
-        }catch(e){ showToast('❌ Gagal Cloud'); } 
+            showToast('Sinkron Selesai'); 
+        }catch(e){ showToast('Gagal Cloud'); } 
     };
 
     const performSearch = () => {};
 
     const downloadReport = async () => {
-      showToast('⏳ Menyiapkan...');
+      showToast('Menyiapkan foto...');
       const r = document.createElement('div'); r.className = 'bg-white p-6 w-[400px] fixed top-0 -left-[2000px] rounded-2xl';
       const s = document.getElementById('total-tersedia')?.innerText;
       const a = formatRp(Object.values(actualsCache).reduce((sum,v)=>sum+v, 0));
       r.innerHTML = `<div class="bg-emerald-600 rounded-xl p-5 text-white mb-5 text-center font-bold">Laporan Bulanan</div><div class="flex justify-between border-b py-2"><span class="text-gray-500">Tersedia</span><span class="font-bold text-emerald-600">${s}</span></div><div class="flex justify-between border-b py-2"><span class="text-gray-500">Terpakai</span><span class="font-bold text-red-500">${a}</span></div>`;
-      document.body.appendChild(r); const c = await html2canvas(r, { scale: 2 }); document.body.removeChild(r); const l = document.createElement('a'); l.download = 'Laporan.png'; l.href = c.toDataURL(); l.click(); showToast('✅ Diunduh!');
+      document.body.appendChild(r); const c = await html2canvas(r, { scale: 2 }); document.body.removeChild(r); const l = document.createElement('a'); l.download = 'Laporan.png'; l.href = c.toDataURL(); l.click(); showToast('Selesai');
     };
 
     window.onload = () => {
@@ -534,7 +546,7 @@
         [n.getFullYear()-1, n.getFullYear(), n.getFullYear()+1].forEach(y => yH += `<option value="${y}" ${y === n.getFullYear() ? 'selected' : ''}>${y}</option>`);
         ms.innerHTML = mH; ys.innerHTML = yH;
       }
-      setCurrentUser('Suami'); renderSavings(); renderYearly(); fetchActualsFromCloud();
+      setCurrentUser('Suami'); renderSavings(); renderYearly(); handleMonthChange();
     };
   </script>
 </body>
