@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Perencana Keuangan Keluarga</title>
+  <title>Budget Planner Keluarga</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -15,196 +15,182 @@
     .card-shadow { box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
     .scroll-hide::-webkit-scrollbar { display: none; }
     .scroll-hide { -ms-overflow-style: none; scrollbar-width: none; }
-    @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    .animate-slide-up { animation: slideUp 0.3s ease-out forwards; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
     @keyframes bounceIn { 0% { transform: translate(-50%, 100%); } 50% { transform: translate(-50%, -10%); } 100% { transform: translate(-50%, 0); } }
     .animate-toast { animation: bounceIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-    .snap-x-container { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 12px; padding-bottom: 10px; }
-    .snap-card { flex: 0 0 85%; scroll-snap-align: center; }
   </style>
 </head>
 <body class="h-screen flex flex-col max-w-md mx-auto relative shadow-2xl overflow-hidden bg-gray-50">
 
   <!-- Header -->
   <header class="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white p-4 shadow-lg flex-shrink-0 z-10">
-    <h1 class="text-xl font-bold text-center">💰 Perencana Keuangan</h1>
-    <div class="mt-4 flex justify-center bg-emerald-700 p-1 rounded-lg max-w-[200px] mx-auto shadow-inner border border-emerald-800">
-      <button id="btn-suami" onclick="setCurrentUser('Suami')" class="flex-1 text-xs font-bold py-1.5 rounded-md transition-all bg-white text-emerald-700 shadow">👨🏻 Suami</button>
-      <button id="btn-istri" onclick="setCurrentUser('Istri')" class="flex-1 text-xs font-bold py-1.5 rounded-md transition-all text-emerald-100 hover:text-white">👩🏻 Istri</button>
+    <div class="flex justify-between items-center">
+        <h1 class="text-lg font-bold">💰 Budget Keluarga</h1>
+        <div class="flex bg-emerald-700 p-0.5 rounded-lg border border-emerald-800">
+            <button id="btn-suami" onclick="setCurrentUser('Suami')" class="text-[10px] font-bold px-3 py-1 rounded-md transition-all bg-white text-emerald-700 shadow">👨🏻 SUAMI</button>
+            <button id="btn-istri" onclick="setCurrentUser('Istri')" class="text-[10px] font-bold px-3 py-1 rounded-md transition-all text-emerald-100 hover:text-white">👩🏻 ISTRI</button>
+        </div>
     </div>
   </header>
 
   <!-- Navigation -->
-  <nav class="flex gap-2 p-3 bg-white shadow-sm flex-shrink-0 overflow-x-auto scroll-hide border-b border-gray-100" id="nav-tabs">
-    <button onclick="switchTab('dashboard')" class="tab-btn flex-1 min-w-max px-4 py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 bg-gradient-to-br from-emerald-600 to-emerald-500 text-white shadow-md" data-tab="dashboard"><span>📊</span> Dashboard</button>
-    <button onclick="switchTab('monthly')" class="tab-btn flex-1 min-w-max px-4 py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 bg-gray-100 text-gray-500 hover:bg-gray-200" data-tab="monthly"><span>📝</span> Bulanan</button>
-    <button onclick="switchTab('savings')" class="tab-btn flex-1 min-w-max px-4 py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 bg-gray-100 text-gray-500 hover:bg-gray-200" data-tab="savings"><span>🎯</span> Tabungan</button>
-    <button onclick="switchTab('yearly')" class="tab-btn flex-1 min-w-max px-4 py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 bg-gray-100 text-gray-500 hover:bg-gray-200" data-tab="yearly"><span>📅</span> Tahunan</button>
-    <button onclick="switchTab('search')" class="tab-btn flex-1 min-w-max px-4 py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-1.5 bg-gray-100 text-gray-500 hover:bg-gray-200" data-tab="search"><span>🔍</span> Riwayat</button>
+  <nav class="flex gap-1 p-2 bg-white shadow-sm flex-shrink-0 border-b border-gray-100" id="nav-tabs">
+    <button onclick="switchTab('dashboard')" class="tab-btn flex-1 py-3 rounded-xl text-xs font-bold transition-all bg-gradient-to-br from-emerald-600 to-emerald-500 text-white shadow-md" data-tab="dashboard">📊 DASHBOARD</button>
+    <button onclick="switchTab('monthly')" class="tab-btn flex-1 py-3 rounded-xl text-xs font-bold transition-all bg-gray-100 text-gray-500" data-tab="monthly">📝 BULANAN</button>
+    <button onclick="switchTab('savings')" class="tab-btn flex-1 py-3 rounded-xl text-xs font-bold transition-all bg-gray-100 text-gray-500" data-tab="savings">🎯 TARGET</button>
+    <button onclick="switchTab('yearly')" class="tab-btn flex-1 py-3 rounded-xl text-xs font-bold transition-all bg-gray-100 text-gray-500" data-tab="yearly">📅 PLAN</button>
   </nav>
 
-  <!-- Main Content Area -->
+  <!-- Main Content -->
   <main class="flex-1 overflow-y-auto scroll-hide p-4 pb-24 relative">
     
     <!-- PAGE: DASHBOARD -->
     <div id="page-dashboard" class="page-content animate-fade-in space-y-4">
+      <div id="dash-loading" class="hidden text-center py-2"><p class="text-[10px] font-bold text-emerald-600 animate-pulse uppercase tracking-widest">🔄 Sinkronisasi Data Cloud...</p></div>
+      
       <div class="bg-white rounded-2xl p-5 card-shadow">
-        <h2 class="text-lg font-bold text-gray-800 mb-4">📊 Ringkasan Tahun <span id="dash-year"></span></h2>
+        <h2 class="text-sm font-bold text-gray-800 mb-3 flex justify-between items-center">
+            <span>📊 RINGKASAN TAHUNAN</span>
+            <span id="dash-year-label" class="text-emerald-600">2026</span>
+        </h2>
         <div class="grid grid-cols-2 gap-3 mb-4">
-          <div class="bg-emerald-50 rounded-xl p-4 text-center border border-emerald-100">
-            <p class="text-xs text-gray-500 mb-1">Total Pemasukan</p>
-            <p id="dash-total-pemasukan" class="text-lg font-bold text-emerald-600">Rp 0</p>
+          <div class="bg-emerald-50 rounded-xl p-3 text-center border border-emerald-100">
+            <p class="text-[9px] text-gray-500 font-bold uppercase mb-1">Pemasukan</p>
+            <p id="dash-total-pemasukan" class="text-sm font-bold text-emerald-600">Rp 0</p>
           </div>
-          <div class="bg-red-50 rounded-xl p-4 text-center border border-red-100">
-            <p class="text-xs text-gray-500 mb-1">Total Pengeluaran</p>
-            <p id="dash-total-pengeluaran" class="text-lg font-bold text-red-600">Rp 0</p>
+          <div class="bg-red-50 rounded-xl p-3 text-center border border-red-100">
+            <p class="text-[9px] text-gray-500 font-bold uppercase mb-1">Pengeluaran</p>
+            <p id="dash-total-pengeluaran" class="text-sm font-bold text-red-600">Rp 0</p>
           </div>
         </div>
-        <div class="bg-blue-50 rounded-xl p-4 text-center border border-blue-100">
-          <p class="text-xs text-gray-500 mb-1">Rata-rata Pengeluaran</p>
-          <p id="dash-rata-pengeluaran" class="text-xl font-bold text-blue-600">Rp 0</p>
+        <div class="bg-blue-50 rounded-xl p-3 flex justify-between items-center border border-blue-100">
+          <p class="text-[10px] text-gray-500 font-bold uppercase">Sisa Dana Kas</p>
+          <p id="dash-total-sisa" class="text-lg font-extrabold text-blue-600">Rp 0</p>
         </div>
       </div>
+
       <div class="bg-white rounded-2xl p-5 card-shadow">
-        <h3 class="font-semibold text-gray-800 mb-4">📈 Tren Arus Kas</h3>
-        <div class="relative w-full h-48 mb-2"><canvas id="trendChart"></canvas></div>
+        <h3 class="font-bold text-gray-800 mb-4 text-[10px] uppercase tracking-widest">📈 Tren Arus Kas</h3>
+        <div class="relative w-full h-40"><canvas id="trendChart"></canvas></div>
       </div>
+
       <div class="bg-white rounded-2xl p-5 card-shadow">
-        <h3 class="font-semibold text-gray-800 mb-4">🎯 Realisasi Tahunan</h3>
-        <div class="mb-4">
-          <div class="flex justify-between text-xs font-bold mb-1.5"><span class="text-gray-400">TERSERAP</span><span id="dash-yearly-percent" class="text-emerald-600">0%</span></div>
-          <div class="h-3 bg-gray-200 rounded-full overflow-hidden"><div id="dash-yearly-bar" class="h-full bg-emerald-500 transition-all duration-1000" style="width: 0%"></div></div>
-        </div>
-        <div id="dash-yearly-sisa-box" class="mt-3 pt-3 border-t flex justify-between items-center text-sm font-extrabold">
-          <span class="text-gray-500">SISA BUDGET</span>
-          <span id="dash-yearly-sisa" class="text-emerald-600">Rp 0</span>
-        </div>
+        <h3 class="font-bold text-gray-800 mb-4 text-[10px] uppercase tracking-widest">🍩 Pengeluaran Bulan Ini</h3>
+        <div class="relative w-full h-40"><canvas id="expenseChart"></canvas></div>
+        <div id="chart-legend" class="mt-4 space-y-1.5"></div>
       </div>
+
       <div class="bg-white rounded-2xl p-5 card-shadow">
-        <h3 class="font-semibold text-gray-800 mb-4">🍩 Kategori Bulan Ini</h3>
-        <div class="relative w-full h-48 mb-2"><canvas id="expenseChart"></canvas></div>
-        <div id="chart-legend" class="mt-4 space-y-2"></div>
-      </div>
-      <div class="bg-white rounded-2xl p-5 card-shadow">
-        <h3 class="font-semibold text-gray-800 mb-3">📋 Rekap Per Bulan</h3>
-        <div class="space-y-2" id="dash-months"></div>
+        <h3 class="font-bold text-gray-800 mb-3 text-[10px] uppercase tracking-widest">📋 Riwayat Bulan</h3>
+        <div class="space-y-2" id="dash-months-list"></div>
       </div>
     </div>
 
     <!-- PAGE: MONTHLY -->
     <div id="page-monthly" class="page-content hidden animate-fade-in space-y-4">
-      <div class="bg-white rounded-2xl p-5 card-shadow">
-        <div class="flex gap-2 mb-4">
-          <select id="select-month" onchange="handleMonthChange()" class="flex-1 p-3 border border-gray-200 rounded-xl text-sm font-extrabold bg-gray-50 outline-none"></select>
-          <select id="select-year" onchange="handleMonthChange()" class="w-24 p-3 border border-gray-200 rounded-xl text-sm font-extrabold bg-gray-50 outline-none"></select>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div><label class="text-[10px] font-bold text-gray-400 block mb-1 uppercase">Saldo Awal</label><input type="number" id="input-saldo" oninput="calculateMonthly()" placeholder="0" class="w-full p-2.5 border rounded-xl text-sm font-bold bg-gray-50 outline-none"></div>
-          <div id="container-pemasukan"><label class="text-[10px] font-bold text-gray-400 block mb-1 uppercase">Pemasukan</label><input type="number" id="input-pemasukan" oninput="calculateMonthly()" placeholder="0" class="w-full p-2.5 border rounded-xl text-sm font-bold bg-gray-50 outline-none"></div>
-        </div>
-      </div>
-
-      <div class="bg-white rounded-2xl p-5 card-shadow">
-        <h3 class="font-extrabold text-emerald-700 text-sm mb-3">➕ TAMBAH PENGELUARAN</h3>
+      <!-- Periode & Saldo -->
+      <div class="bg-white rounded-2xl p-5 card-shadow space-y-4">
         <div class="flex gap-2">
-          <select id="dropdown-rencana" onchange="addExpenseFromPlan(this.value)" class="flex-1 p-3 border-2 border-emerald-100 bg-emerald-50 rounded-xl text-sm font-bold text-emerald-700 outline-none"></select>
-          <button onclick="addExpenseRow()" class="bg-emerald-600 text-white w-12 rounded-xl font-bold">+</button>
+          <select id="select-month" onchange="handleMonthChange()" class="flex-1 p-2.5 border rounded-xl text-xs font-bold bg-gray-50"></select>
+          <select id="select-year" onchange="handleMonthChange()" class="w-20 p-2.5 border rounded-xl text-xs font-bold bg-gray-50"></select>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-3">
+          <div class="relative">
+            <label class="text-[9px] font-bold text-gray-400 block mb-1 uppercase">Saldo Awal</label>
+            <input type="number" id="input-saldo" oninput="calculateMonthly()" placeholder="0" class="w-full p-2.5 border rounded-xl text-xs font-bold bg-gray-50 outline-none">
+            <button onclick="pullLastMonthBalance()" class="absolute -top-1 right-0 text-[8px] text-emerald-600 font-extrabold underline">TARIK SISA LALU</button>
+          </div>
+          <div>
+            <label class="text-[9px] font-bold text-gray-400 block mb-1 uppercase">Pemasukan Rutin</label>
+            <input type="number" id="input-pemasukan" oninput="calculateMonthly()" placeholder="0" class="w-full p-2.5 border rounded-xl text-xs font-bold bg-gray-50 outline-none">
+          </div>
+        </div>
+
+        <div class="bg-gray-800 rounded-xl p-3 text-white flex justify-between items-center shadow-lg">
+           <span class="text-[10px] font-bold opacity-70 uppercase">Tersedia</span>
+           <span id="total-tersedia" class="text-sm font-extrabold">Rp 0</span>
         </div>
       </div>
 
-      <div id="expense-container-ui" class="hidden">
-        <div class="flex justify-between items-center px-1 mb-2">
-           <h4 class="text-xs font-bold text-gray-500 uppercase tracking-widest">Daftar Input (Geser)</h4>
-           <span id="expense-count" class="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full font-bold">0</span>
+      <!-- Quick Transaction -->
+      <div class="bg-emerald-600 rounded-2xl p-5 text-white shadow-xl">
+        <h3 class="font-extrabold text-[10px] mb-3 uppercase tracking-widest">🖊️ Input Pengeluaran Cepat</h3>
+        <div class="space-y-3">
+           <select id="quick-category" class="w-full p-3 bg-emerald-700 border-none rounded-xl text-xs font-bold text-white outline-none">
+             <option value="" disabled selected>Pilih Rencana atau Kategori...</option>
+             <optgroup label="Rencana Plan" id="opt-rencana"></optgroup>
+             <optgroup label="Kategori Umum" id="opt-lainnya"></optgroup>
+           </select>
+           <div class="flex gap-2">
+             <input type="number" id="quick-nominal" placeholder="Nominal Rp" class="flex-[2] p-3 bg-white rounded-xl text-gray-800 font-extrabold text-sm outline-none">
+             <button onclick="submitTransaction()" class="flex-1 bg-yellow-400 text-emerald-900 font-extrabold rounded-xl shadow active:scale-95 transition-all text-xs">SIMPAN</button>
+           </div>
         </div>
-        <div id="expense-list" class="snap-x-container scroll-hide"></div>
       </div>
 
-      <div id="savings-container-ui" class="hidden">
-        <div class="flex justify-between items-center px-1 mb-2 mt-4">
-           <h4 class="text-xs font-bold text-blue-500 uppercase tracking-widest">Tabungan (Geser)</h4>
-           <button onclick="addMonthlySavingRow()" class="text-blue-600 text-[10px] font-bold uppercase tracking-tighter underline">+ Tambah</button>
-        </div>
-        <div id="monthly-savings-list" class="snap-x-container scroll-hide"></div>
-      </div>
-
-      <div class="bg-gray-800 rounded-2xl p-5 text-white shadow-xl">
+      <!-- Monitoring Anggaran -->
+      <div class="bg-white rounded-2xl p-5 card-shadow">
         <div class="flex justify-between items-center mb-4">
-           <span class="text-xs font-bold opacity-60">SISA DANA BULAN INI</span>
-           <span id="total-sisa" class="text-xl font-extrabold">Rp 0</span>
+            <h3 class="font-extrabold text-gray-600 text-[10px] uppercase tracking-widest">Monitor Sisa Plan</h3>
+            <button onclick="fetchActualsFromCloud()" class="text-[9px] font-bold text-blue-600 underline">REFRESH DATA</button>
         </div>
-        <div class="grid grid-cols-2 gap-4 text-xs">
-           <div class="border-l-2 border-emerald-500 pl-3">
-             <p class="opacity-60 mb-1">Tersedia</p>
-             <p id="total-tersedia" class="font-bold text-sm">Rp 0</p>
-           </div>
-           <div class="border-l-2 border-red-500 pl-3">
-             <p class="opacity-60 mb-1">Aktual</p>
-             <p id="total-aktual" class="font-bold text-sm text-red-400">Rp 0</p>
-           </div>
-        </div>
-      </div>
-
-      <div class="flex gap-2">
-        <button onclick="downloadReport()" class="flex-1 bg-white border-2 border-gray-200 text-gray-600 py-4 rounded-2xl text-xs font-bold flex items-center justify-center gap-1">📸 Foto</button>
-        <button onclick="handleSaveMonthly()" class="flex-[3] bg-emerald-600 text-white py-4 rounded-2xl text-lg font-extrabold shadow-lg">💾 Simpan Data</button>
+        <div id="monitoring-list" class="space-y-4"></div>
       </div>
     </div>
 
     <!-- PAGE: SAVINGS -->
     <div id="page-savings" class="page-content hidden animate-fade-in space-y-4">
       <div class="bg-white rounded-2xl p-5 card-shadow">
-        <div class="flex justify-between items-center mb-5"><h2 class="text-lg font-bold text-gray-800">🎯 Target Tabungan</h2><button onclick="openSavingsModal()" class="bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg text-sm font-bold">+ Baru</button></div>
-        <div id="savings-list" class="space-y-4"></div>
+        <div class="flex justify-between items-center mb-5"><h2 class="text-sm font-bold text-gray-800">🎯 TARGET TABUNGAN</h2><button onclick="openSavingsModal()" class="bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg text-xs font-bold">+ BARU</button></div>
+        <div id="savings-list" class="space-y-3"></div>
       </div>
     </div>
 
     <!-- PAGE: YEARLY -->
     <div id="page-yearly" class="page-content hidden animate-fade-in space-y-4">
       <div class="bg-white rounded-2xl p-5 card-shadow">
-        <div class="flex justify-between items-center mb-5"><h2 class="text-lg font-bold text-gray-800">📅 Rencana Tahunan</h2><button onclick="openYearlyModal()" class="bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg text-sm font-bold">+ Baru</button></div>
-        <div id="yearly-list" class="space-y-4"></div>
+        <div class="flex justify-between items-center mb-5"><h2 class="text-sm font-bold text-gray-800">📅 PLAN TAHUNAN</h2><button onclick="openYearlyModal()" class="bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg text-xs font-bold">+ BARU</button></div>
+        <div id="yearly-list" class="space-y-3"></div>
       </div>
-      <button onclick="saveYearlyData()" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-extrabold">💾 Sinkronisasi Cloud</button>
+      <button onclick="saveYearlyData()" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-extrabold shadow-lg">💾 SINKRONISASI KE CLOUD</button>
     </div>
 
     <!-- PAGE: SEARCH -->
     <div id="page-search" class="page-content hidden animate-fade-in space-y-4">
       <div class="bg-white rounded-2xl p-5 card-shadow min-h-[50vh]">
-        <h2 class="text-lg font-bold text-gray-800 mb-4">🔍 Riwayat</h2>
-        <input type="text" id="search-input" oninput="performSearch()" placeholder="Cari..." class="w-full p-4 bg-gray-50 border rounded-xl font-bold outline-none mb-4">
+        <h2 class="text-sm font-bold text-gray-800 mb-4">🔍 CARI RIWAYAT</h2>
+        <input type="text" id="search-input" oninput="performSearch()" placeholder="Ketik nama item..." class="w-full p-4 bg-gray-50 border rounded-xl font-bold text-xs outline-none mb-4">
         <div id="search-results" class="space-y-3"></div>
       </div>
     </div>
   </main>
 
-  <!-- TOAST -->
-  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-5 py-3 rounded-full shadow-2xl text-sm font-bold z-[60] animate-toast"><span id="toast-msg"></span></div>
+  <!-- TOAST MESSAGE -->
+  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-5 py-3 rounded-full shadow-2xl text-xs font-bold z-[60] animate-toast"><span id="toast-msg"></span></div>
 
   <!-- MODALS -->
   <div id="modal-savings" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end justify-center z-50">
     <div class="bg-white w-full max-w-md rounded-t-3xl p-6 shadow-2xl animate-slide-up">
-      <h3 class="text-xl font-extrabold text-gray-800 mb-5">➕ Tabungan Baru</h3>
+      <h3 class="text-lg font-extrabold text-gray-800 mb-5 uppercase tracking-tighter">➕ Tabungan Baru</h3>
       <div class="space-y-4">
-        <input type="text" id="sav-name" placeholder="Nama" class="w-full p-4 bg-gray-50 border rounded-xl font-bold outline-none">
-        <input type="number" id="sav-target" placeholder="Target Rp" class="w-full p-4 bg-gray-50 border rounded-xl font-bold outline-none">
-        <input type="number" id="sav-collected" placeholder="Mulai dengan Rp" class="w-full p-4 bg-gray-50 border rounded-xl font-bold outline-none">
-        <div class="flex gap-3"><button onclick="closeModal('modal-savings')" class="flex-1 bg-gray-100 py-4 rounded-xl font-bold">Batal</button><button onclick="saveSavings()" class="flex-1 bg-emerald-600 text-white py-4 rounded-xl font-bold">Simpan</button></div>
+        <input type="text" id="sav-name" placeholder="Nama Tujuan" class="w-full p-4 bg-gray-50 border rounded-xl font-bold text-sm">
+        <input type="number" id="sav-target" placeholder="Target Total Rp" class="w-full p-4 bg-gray-50 border rounded-xl font-bold text-sm">
+        <div class="flex gap-3"><button onclick="closeModal('modal-savings')" class="flex-1 bg-gray-100 py-4 rounded-xl font-bold">BATAL</button><button onclick="saveSavings()" class="flex-1 bg-emerald-600 text-white py-4 rounded-xl font-bold">SIMPAN</button></div>
       </div>
     </div>
   </div>
 
   <div id="modal-yearly" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end justify-center z-50">
     <div class="bg-white w-full max-w-md rounded-t-3xl p-6 shadow-2xl animate-slide-up">
-      <h3 class="text-xl font-extrabold text-gray-800 mb-5">➕ Rencana Baru</h3>
-      <div class="space-y-4">
-        <input type="text" id="year-name" placeholder="Nama" class="w-full p-4 bg-gray-50 border rounded-xl font-bold outline-none">
-        <select id="year-category" class="w-full p-4 bg-gray-50 border rounded-xl font-bold outline-none"></select>
+      <h3 class="text-lg font-extrabold text-gray-800 mb-5 uppercase tracking-tighter">➕ Tambah Plan</h3>
+      <div class="space-y-4 overflow-y-auto max-h-[70vh]">
+        <input type="text" id="year-name" placeholder="Nama Pengeluaran" class="w-full p-4 bg-gray-50 border rounded-xl font-bold text-sm">
+        <select id="year-category" class="w-full p-4 bg-gray-50 border rounded-xl font-bold text-sm"></select>
         <div id="year-months-grid" class="grid grid-cols-4 gap-2"></div>
-        <input type="number" id="year-amount" placeholder="Nominal / Bulan" class="w-full p-4 bg-gray-50 border rounded-xl font-bold outline-none">
-        <div class="flex gap-3"><button onclick="closeModal('modal-yearly')" class="flex-1 bg-gray-100 py-4 rounded-xl font-bold">Batal</button><button onclick="saveYearly()" class="flex-1 bg-emerald-600 text-white py-4 rounded-xl font-bold">Simpan</button></div>
+        <input type="number" id="year-amount" placeholder="Anggaran Per Bulan Rp" class="w-full p-4 bg-gray-50 border rounded-xl font-bold text-sm">
+        <div class="flex gap-3"><button onclick="closeModal('modal-yearly')" class="flex-1 bg-gray-100 py-4 rounded-xl font-bold">BATAL</button><button onclick="saveYearly()" class="flex-1 bg-emerald-600 text-white py-4 rounded-xl font-bold">SIMPAN</button></div>
       </div>
     </div>
   </div>
@@ -216,10 +202,10 @@
     const categoriesList = ['Makanan & Minuman', 'Transportasi (Bensin/Tol)', 'Tagihan Rumah', 'Pendidikan & Anak', 'Pakaian & Perawatan', 'Hiburan & Liburan', 'Cicilan & Utang', 'Lainnya'];
     const categoryColors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#64748b', '#cbd5e1'];
     
-    let chartInstance = null, trendChartInstance = null, currentUser = 'Suami', expenses = [], monthlySavings = [];
+    let chartInstance = null, trendChartInstance = null, currentUser = 'Suami';
     let savingsGoals = JSON.parse(localStorage.getItem('savingsData')) || [];
     let yearlyPlans = JSON.parse(localStorage.getItem('yearlyPlansData')) || [];
-    let selectedYearlyMonths = [];
+    let selectedYearlyMonths = [], actualsCache = {}, currentMonthIncome = 0;
 
     const formatRp = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n || 0);
     const showToast = (m) => { const t = document.getElementById('toast'); if(t) { document.getElementById('toast-msg').innerText = m; t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 2500); } };
@@ -230,7 +216,7 @@
       const page = document.getElementById(`page-${id}`);
       if(page) page.classList.remove('hidden');
       document.querySelectorAll('.tab-btn').forEach(b => {
-        b.className = b.dataset.tab === id ? 'tab-btn flex-1 min-w-max px-4 py-3 rounded-xl text-sm font-semibold transition-all bg-gradient-to-br from-emerald-600 to-emerald-500 text-white shadow-md' : 'tab-btn flex-1 min-w-max px-4 py-3 rounded-xl text-sm font-semibold bg-gray-100 text-gray-500';
+        b.className = b.dataset.tab === id ? 'tab-btn flex-1 py-3 rounded-xl text-xs font-bold transition-all bg-gradient-to-br from-emerald-600 to-emerald-500 text-white shadow-md' : 'tab-btn flex-1 py-3 rounded-xl text-xs font-bold transition-all bg-gray-100 text-gray-500';
       });
       if (id === 'dashboard') renderDashboard();
     };
@@ -240,302 +226,306 @@
       const label = document.getElementById('monthly-user-label');
       if(label) label.innerText = u;
       const isS = u === 'Suami';
-      const btnSuami = document.getElementById('btn-suami');
-      const btnIstri = document.getElementById('btn-istri');
-      if(btnSuami) btnSuami.className = isS ? 'flex-1 text-xs font-bold py-1.5 rounded-md bg-white text-emerald-700 shadow' : 'flex-1 text-xs font-bold py-1.5 text-emerald-100';
-      if(btnIstri) btnIstri.className = !isS ? 'flex-1 text-xs font-bold py-1.5 rounded-md bg-white text-emerald-700 shadow' : 'flex-1 text-xs font-bold py-1.5 text-emerald-100';
+      const btnS = document.getElementById('btn-suami');
+      const btnI = document.getElementById('btn-istri');
+      if(btnS) btnS.className = isS ? 'text-[10px] font-bold px-3 py-1 rounded-md bg-white text-emerald-700 shadow' : 'text-[10px] font-bold px-3 py-1 rounded-md text-emerald-100';
+      if(btnI) btnI.className = !isS ? 'text-[10px] font-bold px-3 py-1 rounded-md bg-white text-emerald-700 shadow' : 'text-[10px] font-bold px-3 py-1 rounded-md text-emerald-100';
       const inputSaldo = document.getElementById('input-saldo');
       const inputPem = document.getElementById('input-pemasukan');
       if(inputSaldo) inputSaldo.disabled = !isS;
       if(inputPem) inputPem.disabled = !isS;
-      calculateMonthly();
+    };
+
+    // SINKRONISASI CLOUD UTAMA
+    const fetchActualsFromCloud = async (silent = false) => {
+      const m = document.getElementById('select-month')?.value;
+      const y = document.getElementById('select-year')?.value;
+      if(!silent) document.getElementById('dash-loading')?.classList.remove('hidden');
+      
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+        
+        const response = await fetch(`${SCRIPT_URL}?action=getActualSpending&month=${m}&year=${y}`, {
+            signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+
+        if (!response.ok) throw new Error("Cloud Response Not OK");
+        
+        const data = await response.json();
+        actualsCache = data.categoryTotals || {};
+        currentMonthIncome = data.totalIncome || 0;
+        
+        // Simpan cache lokal jika offline
+        localStorage.setItem(`cache_actual_${y}_${m}`, JSON.stringify(actualsCache));
+        localStorage.setItem(`cache_income_${y}_${m}`, currentMonthIncome);
+        
+        renderMonitoringList();
+        renderDashboard();
+      } catch (e) {
+        console.warn("Gagal sinkron cloud, menggunakan data lokal...");
+        // Fallback ke data lokal jika gagal tarik cloud
+        actualsCache = JSON.parse(localStorage.getItem(`cache_actual_${y}_${m}`)) || {};
+        currentMonthIncome = Number(localStorage.getItem(`cache_income_${y}_${m}`)) || 0;
+        renderMonitoringList();
+        renderDashboard();
+      } finally {
+        document.getElementById('dash-loading')?.classList.add('hidden');
+      }
+    };
+
+    const pullLastMonthBalance = () => {
+        const m = Number(document.getElementById('select-month').value);
+        const y = Number(document.getElementById('select-year').value);
+        let prevM = m - 1, prevY = y;
+        if (prevM < 0) { prevM = 11; prevY = y - 1; }
+        
+        const history = JSON.parse(localStorage.getItem('monthlyHistory') || '{}');
+        const prevData = history[`${prevY}_${prevM}`];
+        if (prevData) {
+            const sisa = prevData.income - prevData.expense;
+            const inputSaldo = document.getElementById('input-saldo');
+            if(inputSaldo) {
+                inputSaldo.value = sisa > 0 ? sisa : 0;
+                calculateMonthly();
+                showToast('✅ Saldo ditarik dari sisa bulan lalu');
+            }
+        } else {
+            showToast('⚠️ Data bulan lalu tidak ditemukan');
+        }
+    };
+
+    const renderMonitoringList = () => {
+      const mEl = document.getElementById('select-month');
+      if(!mEl) return;
+      const m = Number(mEl.value);
+      const list = document.getElementById('monitoring-list');
+      if(!list) return;
+
+      const plansForMonth = yearlyPlans.filter(p => p.months.includes(m));
+      let html = '';
+      if(plansForMonth.length === 0) {
+        html = '<p class="text-center text-[10px] text-gray-400 font-bold py-4 uppercase">Belum ada rencana bulan ini.</p>';
+      } else {
+        plansForMonth.forEach(p => {
+          const act = actualsCache[p.name] || 0;
+          const sisa = p.amount - act;
+          const pct = Math.min((act / p.amount) * 100, 100);
+          const color = sisa < 0 ? 'bg-red-500' : (sisa < (p.amount*0.1) ? 'bg-orange-400' : 'bg-emerald-500');
+
+          html += `
+            <div class="border-b border-gray-50 pb-3">
+              <div class="flex justify-between items-center mb-1.5">
+                <div><h4 class="font-extrabold text-gray-800 text-[11px]">${p.name.toUpperCase()}</h4><p class="text-[8px] font-bold text-gray-400 uppercase">${p.category}</p></div>
+                <div class="text-right"><p class="text-[11px] font-extrabold ${sisa<0?'text-red-500':'text-emerald-600'}">${formatRp(sisa)}</p><p class="text-[7px] font-bold text-gray-400 uppercase">SISA</p></div>
+              </div>
+              <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden mb-1"><div class="h-full ${color} transition-all duration-500" style="width: ${pct}%"></div></div>
+              <div class="flex justify-between text-[8px] font-bold text-gray-400"><span>AKTUAL: ${formatRp(act)}</span><span>PLAN: ${formatRp(p.amount)}</span></div>
+            </div>`;
+        });
+      }
+      list.innerHTML = html;
+      
+      const optRenc = document.getElementById('opt-rencana');
+      const optTab = document.getElementById('opt-tabungan');
+      const optLain = document.getElementById('opt-lainnya');
+      if(optRenc) optRenc.innerHTML = plansForMonth.map(p => `<option value="Pengeluaran|${p.name}">${p.name}</option>`).join('');
+      if(optTab) optTab.innerHTML = savingsGoals.map(g => `<option value="Tabungan|${g.name}">${g.name}</option>`).join('');
+      if(optLain) optLain.innerHTML = categoriesList.map(c => `<option value="Pengeluaran|${c}">${c}</option>`).join('') + `<option value="Pengeluaran|Lainnya">Lainnya</option>`;
+    };
+
+    const submitTransaction = async () => {
+      const quickCat = document.getElementById('quick-category');
+      const quickNom = document.getElementById('quick-nominal');
+      const catVal = quickCat?.value;
+      const nominal = Number(quickNom?.value);
+      
+      if(!catVal || !nominal) return showToast('⚠️ Lengkapi data');
+
+      const [jenis, kategori] = catVal.split('|');
+      const m = document.getElementById('select-month').value;
+      const y = document.getElementById('select-year').value;
+      const tgl = new Date().toISOString().split('T')[0];
+
+      showToast('⏳ Mencatat...');
+      
+      // Update UI lokal supaya instan
+      actualsCache[kategori] = (actualsCache[kategori] || 0) + nominal;
+      renderMonitoringList();
+      renderDashboard();
+
+      try {
+        const resp = await fetch(SCRIPT_URL, {
+          method: 'POST', mode: 'no-cors',
+          body: JSON.stringify({ tanggal: tgl, pengguna: currentUser, jenis: jenis, kategori: kategori, nominal: nominal, keterangan: "Web App" })
+        });
+        
+        if(quickNom) quickNom.value = '';
+        showToast('✅ Berhasil Disimpan!');
+        
+        // Tarik data ulang untuk validasi
+        setTimeout(() => fetchActualsFromCloud(true), 2000);
+      } catch (e) { 
+        showToast('❌ Error Cloud (Lokal Tersimpan)'); 
+      }
     };
 
     const renderDashboard = () => {
-      const ySelect = document.getElementById('select-year');
-      const mSelect = document.getElementById('select-month');
-      const y = ySelect ? ySelect.value : new Date().getFullYear();
-      const m = mSelect ? mSelect.value : new Date().getMonth();
-      
-      const dashYear = document.getElementById('dash-year');
-      if(dashYear) dashYear.innerText = y;
-      
-      const history = JSON.parse(localStorage.getItem('monthlyHistory') || '{}');
-      const detailedHistory = JSON.parse(localStorage.getItem('detailedHistoryObj') || '{}');
-      
-      // Ambil data AKTUAL saat ini di UI (jika ada)
-      const liveSaldo = Number(document.getElementById('input-saldo')?.value) || 0;
-      const livePem = Number(document.getElementById('input-pemasukan')?.value) || 0;
-      const liveInc = liveSaldo + livePem;
-      const liveExp = expenses.reduce((s, e) => s + (Number(e.actual)||0), 0) + monthlySavings.reduce((s, x) => s + (Number(x.actual)||0), 0);
+      const ySel = document.getElementById('select-year');
+      const mSel = document.getElementById('select-month');
+      if(!ySel || !mSel) return;
 
-      let tyi = 0, tye = 0, amc = 0, html = '', ti = [], te = [];
+      const y = ySel.value;
+      const m = mSel.value;
+      const periodLabel = document.getElementById('dash-period');
+      const yearLabel = document.getElementById('dash-year-label');
+      if(periodLabel) periodLabel.innerText = `${monthNames[m]} ${y}`;
+      if(yearLabel) yearLabel.innerText = y;
+
+      const totalSpentMonth = Object.values(actualsCache).reduce((s,v)=>s+v, 0);
+      const saldo = Number(document.getElementById('input-saldo')?.value) || 0;
+      const pms = Number(document.getElementById('input-pemasukan')?.value) || 0;
+      const totalInMonth = saldo + pms;
+      
+      // Update Histori Lokal
+      let history = JSON.parse(localStorage.getItem('monthlyHistory') || '{}');
+      history[`${y}_${m}`] = { income: totalInMonth, expense: totalSpentMonth };
+      localStorage.setItem('monthlyHistory', JSON.stringify(history));
+
+      let tyi = 0, tye = 0, amc = 0, ti = [], te = [], html = '';
       for (let i = 0; i < 12; i++) {
-        let mi = 0, me = 0, hd = false;
-        
-        // Cek data di histori permanen
-        if (history[`${y}_${i}`]) {
-            mi = history[`${y}_${i}`].income || 0;
-            me = history[`${y}_${i}`].expense || 0;
-            hd = true;
-        }
-        
-        // Jika sedang di bulan yang aktif di UI, timpa dengan live data jika lebih besar/baru
-        if (i == m) {
-            if (liveInc > 0 || liveExp > 0) {
-                mi = liveInc;
-                me = liveExp;
-                hd = true;
-            }
-        }
-        
-        ti.push(mi); te.push(me);
-        if (hd) {
-            tyi += mi; tye += me; amc++;
-            html += `<div class="flex justify-between items-center p-3 bg-white rounded-xl border border-gray-100 mb-2 shadow-sm"><span class="font-bold text-gray-600 text-xs">${monthNames[i]}</span><div class="text-right"><span class="text-xs font-bold text-emerald-600">+${formatRp(mi)}</span><span class="mx-1 text-gray-300">|</span><span class="text-xs font-bold text-red-500">-${formatRp(me)}</span></div></div>`;
-        }
+          const h = history[`${y}_${i}`] || { income: 0, expense: 0 };
+          ti.push(h.income); te.push(h.expense);
+          if (h.income > 0 || h.expense > 0) {
+              tyi += h.income; tye += h.expense; amc++;
+              html += `<div class="flex justify-between items-center p-3 bg-white rounded-xl border border-gray-100 shadow-sm"><span class="font-bold text-gray-600 text-[10px]">${monthNames[i].toUpperCase()}</span><div class="text-right font-bold"><span class="text-[10px] text-emerald-600">+${formatRp(h.income)}</span><span class="mx-1 text-gray-200">|</span><span class="text-[10px] text-red-500">-${formatRp(h.expense)}</span></div></div>`;
+          }
       }
 
-      const dashMonths = document.getElementById('dash-months');
-      if(dashMonths) dashMonths.innerHTML = html || '<p class="text-center text-xs text-gray-400">Belum ada histori data.</p>';
+      const totalPemEl = document.getElementById('dash-total-pemasukan');
+      const totalPengEl = document.getElementById('dash-total-pengeluaran');
+      const totalSisaEl = document.getElementById('dash-total-sisa');
+      const monthsListEl = document.getElementById('dash-months-list');
       
-      document.getElementById('dash-total-pemasukan').innerText = formatRp(tyi);
-      document.getElementById('dash-total-pengeluaran').innerText = formatRp(tye);
-      document.getElementById('dash-rata-pengeluaran').innerText = formatRp(amc > 0 ? tye / amc : 0);
+      if(totalPemEl) totalPemEl.innerText = formatRp(tyi);
+      if(totalPengEl) totalPengEl.innerText = formatRp(tye);
+      if(totalSisaEl) totalSisaEl.innerText = formatRp(totalInMonth - totalSpentMonth);
+      if(monthsListEl) monthsListEl.innerHTML = html || '<p class="text-center text-[10px] text-gray-400 py-4 font-bold uppercase">Belum ada histori transaksi.</p>';
 
       const ctxT = document.getElementById('trendChart');
       if (ctxT) {
         if (trendChartInstance) trendChartInstance.destroy();
-        trendChartInstance = new Chart(ctxT, { type: 'line', data: { labels: monthShort, datasets: [{ label: 'In', data: ti, borderColor: '#10b981', tension: 0.3 }, { label: 'Out', data: te, borderColor: '#ef4444', tension: 0.3 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { grid: { display: false } } } } });
+        trendChartInstance = new Chart(ctxT, { type: 'line', data: { labels: monthShort, datasets: [{ label: 'In', data: ti, borderColor: '#10b981', tension: 0.3, pointRadius: 2 }, { label: 'Out', data: te, borderColor: '#ef4444', tension: 0.3, pointRadius: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { grid: { display: false }, ticks: { font: { size: 8 } } } } } });
       }
 
       let typ = 0; yearlyPlans.forEach(p => typ += (p.amount * p.months.length));
-      document.getElementById('dash-yearly-sisa').innerText = formatRp(typ - tye);
-      document.getElementById('dash-yearly-percent').innerText = `${(typ > 0 ? (tye / typ) * 100 : 0).toFixed(1)}%`;
-      document.getElementById('dash-yearly-bar').style.width = `${Math.min((typ > 0 ? (tye / typ) * 100 : 0), 100)}%`;
+      const yearlyPercentEl = document.getElementById('dash-yearly-percent');
+      const yearlyBarEl = document.getElementById('dash-yearly-bar');
+      const yearlySisaEl = document.getElementById('dash-yearly-sisa');
+      
+      if(yearlyPercentEl) yearlyPercentEl.innerText = `${(typ > 0 ? (tye / typ) * 100 : 0).toFixed(1)}%`;
+      if(yearlyBarEl) yearlyBarEl.style.width = `${Math.min((typ > 0 ? (tye / typ) * 100 : 0), 100)}%`;
+      if(yearlySisaEl) yearlySisaEl.innerText = formatRp(typ - tye);
 
-      // Grafik Donat berdasarkan kategori bulan terpilih
-      const cats = {}; categoriesList.forEach(c => cats[c] = 0);
-      cats['Tabungan'] = monthlySavings.reduce((s, x) => s + (Number(x.actual)||0), 0);
-      expenses.forEach(e => { if (e.actual) cats[e.category || 'Lainnya'] += Number(e.actual); });
-      
-      const al = [], ad = [], ac = []; let lh = '';
-      categoriesList.forEach((c, i) => { if (cats[c] > 0) { al.push(c); ad.push(cats[c]); ac.push(categoryColors[i]); lh += `<div class="flex justify-between items-center text-xs"><div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full" style="background-color: ${categoryColors[i]}"></span><span class="text-gray-600">${c}</span></div><span class="font-bold">${formatRp(cats[c])}</span></div>`; } });
-      
-      document.getElementById('chart-legend').innerHTML = lh;
+      const labels = Object.keys(actualsCache);
+      const dataValues = Object.values(actualsCache);
       const ctxE = document.getElementById('expenseChart');
       if (ctxE) {
         if (chartInstance) chartInstance.destroy();
-        chartInstance = new Chart(ctxE, { type: 'doughnut', data: { labels: al, datasets: [{ data: ad, backgroundColor: ac }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false } } } });
+        chartInstance = new Chart(ctxE, { type: 'doughnut', data: { labels: labels, datasets: [{ data: dataValues, backgroundColor: categoryColors }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { display: false } } } });
+      }
+      
+      const legendEl = document.getElementById('chart-legend');
+      if(legendEl) {
+          let lh = '';
+          labels.forEach((l,i) => { if(dataValues[i] > 0) lh += `<div class="flex justify-between text-[10px] border-b border-gray-50 pb-1 font-bold"><span>${l.toUpperCase()}</span><span>${formatRp(dataValues[i])}</span></div>`; });
+          legendEl.innerHTML = lh;
       }
     };
-
-    const updatePlanDropdown = () => {
-      const mSel = document.getElementById('select-month');
-      if(!mSel) return;
-      const selM = Number(mSel.value);
-      const dropdown = document.getElementById('dropdown-rencana');
-      if(!dropdown) return;
-      const availablePlans = yearlyPlans.filter(p => p.months.includes(selM) && !expenses.some(e => e.name === p.name));
-      let h = '<option value="" selected disabled>+ Klik pilih rencana...</option>';
-      if (availablePlans.length === 0) h = '<option value="" disabled>Semua sudah masuk daftar</option>';
-      else availablePlans.forEach(p => h += `<option value="${p.id}">${p.name} (${formatRp(p.amount)})</option>`);
-      dropdown.innerHTML = h;
-    };
-
-    const addExpenseFromPlan = (id) => {
-      if (!id) return;
-      const p = yearlyPlans.find(x => x.id == id);
-      if (p) { expenses.unshift({ id: Date.now(), name: p.name, category: p.category, planned: p.amount, actual: '', isFromPlan: true }); renderExpenses(); calculateMonthly(); updatePlanDropdown(); }
-      document.getElementById('dropdown-rencana').value = "";
-    };
-
-    const addExpenseRow = () => { expenses.unshift({ id: Date.now(), name: '', category: 'Lainnya', planned: '', actual: '', isFromPlan: false }); renderExpenses(); };
-    
-    const renderExpenses = () => {
-      const list = document.getElementById('expense-list');
-      if(!list) return;
-      const container = document.getElementById('expense-container-ui');
-      document.getElementById('expense-count').innerText = expenses.length;
-      if (expenses.length === 0) { container.classList.add('hidden'); return; }
-      container.classList.remove('hidden');
-      
-      list.innerHTML = expenses.map(exp => {
-        const p = Number(exp.planned)||0, a = Number(exp.actual)||0, s = p - a;
-        return `<div class="snap-card bg-white border border-emerald-100 rounded-2xl p-4 card-shadow flex flex-col justify-between h-40">
-          <div class="flex justify-between items-start">
-            <div class="flex-1 overflow-hidden">
-               <input type="text" value="${exp.name}" oninput="updateExp(${exp.id},'name',this.value)" class="w-full bg-transparent font-extrabold text-gray-800 outline-none text-sm" ${exp.isFromPlan?'readonly':''} placeholder="Nama...">
-               <p class="text-[9px] font-bold text-emerald-600 uppercase tracking-tighter">${exp.category}</p>
-            </div>
-            <button onclick="removeExp(${exp.id})" class="text-red-300 ml-2">✖</button>
-          </div>
-          <div class="grid grid-cols-2 gap-3 my-2">
-            <div><label class="text-[9px] font-bold text-gray-400">PLAN</label><input type="number" value="${exp.planned}" oninput="updateExp(${exp.id},'planned',this.value)" class="w-full border-b font-bold text-xs p-1 outline-none"></div>
-            <div><label class="text-[9px] font-bold text-emerald-600">AKTUAL</label><input type="number" value="${exp.actual}" oninput="updateExp(${exp.id},'actual',this.value)" class="w-full border-b border-emerald-300 bg-emerald-50 font-extrabold text-sm p-1 outline-none text-emerald-700"></div>
-          </div>
-          <div class="flex justify-between items-center text-[10px] font-bold">
-            <span class="text-gray-400">SISA PLAN</span>
-            <span class="${s<0?'text-red-500':'text-emerald-600'}">${formatRp(s)}</span>
-          </div>
-        </div>`
-      }).join('');
-    };
-
-    const renderMonthlySavings = () => {
-      const list = document.getElementById('monthly-savings-list');
-      if(!list) return;
-      const container = document.getElementById('savings-container-ui');
-      if (monthlySavings.length === 0) { container.classList.add('hidden'); return; }
-      container.classList.remove('hidden');
-      
-      list.innerHTML = monthlySavings.map(ms => {
-        const gs = savingsGoals.map(g => `<option value="${g.id}" ${ms.goalId == g.id ? 'selected' : ''}>${g.name}</option>`).join('');
-        return `<div class="snap-card bg-blue-50 border border-blue-200 rounded-2xl p-4 card-shadow h-40 flex flex-col justify-between">
-            <div class="flex justify-between items-center"><select onchange="updateMS(${ms.id},'goalId',this.value)" class="bg-transparent font-bold text-blue-800 text-xs outline-none border-b border-blue-300"><option value="" disabled selected>Pilih target...</option>${gs}</select><button onclick="removeMS(${ms.id})" class="text-blue-300">✖</button></div>
-            <div class="grid grid-cols-2 gap-3 my-2">
-              <div><label class="text-[9px] font-bold text-blue-400">RENCANA</label><input type="number" value="${ms.planned}" oninput="updateMS(${ms.id},'planned',this.value)" class="w-full border-b border-blue-200 bg-transparent font-bold text-xs p-1 outline-none"></div>
-              <div><label class="text-[9px] font-bold text-blue-600">AKTUAL</label><input type="number" value="${ms.actual}" oninput="updateMS(${ms.id},'actual',this.value)" class="w-full border-b border-blue-400 bg-blue-100 font-extrabold text-sm p-1 outline-none text-blue-700"></div>
-            </div>
-            <p class="text-[9px] text-blue-400 font-bold italic">*Sync Cloud</p>
-          </div>`;
-      }).join('');
-    };
-
-    const removeExp = (id) => { expenses = expenses.filter(e => e.id !== id); renderExpenses(); calculateMonthly(); updatePlanDropdown(); };
-    const updateExp = (id, f, v) => { const e = expenses.find(x => x.id === id); if (e) { e[f] = v; calculateMonthly(); } };
-    const addMonthlySavingRow = () => { monthlySavings.push({ id: Date.now(), goalId: '', planned: '', actual: '' }); renderMonthlySavings(); calculateMonthly(); };
-    const removeMS = (id) => { monthlySavings = monthlySavings.filter(s => s.id !== id); renderMonthlySavings(); calculateMonthly(); };
-    const updateMS = (id, f, v) => { const s = monthlySavings.find(x => x.id === id); if (s) { s[f] = v; calculateMonthly(); } };
 
     const calculateMonthly = () => {
-      const ta = (Number(document.getElementById('input-saldo')?.value)||0) + (Number(document.getElementById('input-pemasukan')?.value)||0);
-      const tk = expenses.reduce((x, e) => x + (Number(e.actual)||0), 0) + monthlySavings.reduce((x, s) => x + (Number(s.actual)||0), 0);
-      document.getElementById('total-tersedia').innerText = formatRp(ta);
-      document.getElementById('total-aktual').innerText = formatRp(tk);
-      document.getElementById('total-sisa').innerText = formatRp(ta - tk);
+        const s = Number(document.getElementById('input-saldo')?.value) || 0;
+        const p = Number(document.getElementById('input-pemasukan')?.value) || 0;
+        const totalTersediaEl = document.getElementById('total-tersedia');
+        if(totalTersediaEl) totalTersediaEl.innerText = formatRp(s + p);
     };
 
-    const handleMonthChange = () => {
-      const y = document.getElementById('select-year').value;
-      const m = document.getElementById('select-month').value;
-      const key = `${y}_${m}`;
-      
-      // Load data dari detailedHistoryObj jika ada
-      const detailedHistory = JSON.parse(localStorage.getItem('detailedHistoryObj') || '{}');
-      const savedData = detailedHistory[key];
-      
-      if (savedData) {
-          expenses = savedData.expenses || [];
-          monthlySavings = savedData.monthlySavings || [];
-          document.getElementById('input-saldo').value = savedData.saldo || '';
-          document.getElementById('input-pemasukan').value = savedData.pemasukan || '';
-      } else {
-          expenses = [];
-          monthlySavings = [];
-          document.getElementById('input-saldo').value = '';
-          document.getElementById('input-pemasukan').value = '';
-      }
-      
-      renderExpenses();
-      renderMonthlySavings();
-      updatePlanDropdown();
-      calculateMonthly();
+    const handleMonthChange = () => { fetchActualsFromCloud(); };
+
+    const openSavingsModal = () => { document.getElementById('modal-savings')?.classList.remove('hidden'); };
+    const saveSavings = () => { 
+        const n = document.getElementById('sav-name')?.value; 
+        const t = Number(document.getElementById('sav-target')?.value); 
+        if(!n||t<=0) return; 
+        savingsGoals.push({id:Date.now(), name:n, target:t}); 
+        renderSavings(); 
+        closeModal('modal-savings'); 
+        localStorage.setItem('savingsData', JSON.stringify(savingsGoals)); 
+        fetchActualsFromCloud(); 
     };
-
-    const handleSaveMonthly = async () => {
-      showToast('⏳ Menyimpan...');
-      const mS = document.getElementById('select-month').value;
-      const yS = document.getElementById('select-year').value;
-      const pem = document.getElementById('input-pemasukan').value;
-      const sal = document.getElementById('input-saldo').value;
-      const key = `${yS}_${mS}`;
-
-      try {
-        // 1. Simpan di Local Storage segera agar dashboard terupdate
-        const totalActExp = expenses.reduce((s, e) => s + (Number(e.actual)||0), 0);
-        const totalActSav = monthlySavings.reduce((s, x) => s + (Number(x.actual)||0), 0);
-        
-        let h = JSON.parse(localStorage.getItem('monthlyHistory') || '{}');
-        h[key] = { income: Number(sal)+Number(pem), expense: totalActExp + totalActSav };
-        localStorage.setItem('monthlyHistory', JSON.stringify(h));
-
-        let dh = JSON.parse(localStorage.getItem('detailedHistoryObj') || '{}');
-        dh[key] = { 
-            expenses: expenses, 
-            monthlySavings: monthlySavings,
-            saldo: sal,
-            pemasukan: pem
-        };
-        localStorage.setItem('detailedHistoryObj', JSON.stringify(dh));
-
-        // 2. Kirim ke Google Sheets
-        if (currentUser === 'Suami' && Number(pem) > 0) await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ tanggal: new Date().toISOString().split('T')[0], pengguna: currentUser, jenis: 'Pemasukan', kategori: 'Gaji', nominal: pem, keterangan: `Periode: ${monthNames[mS]} ${yS}` }) });
-        for (const e of expenses) if (e.name && e.actual) await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ tanggal: new Date().toISOString().split('T')[0], pengguna: currentUser, jenis: 'Pengeluaran', kategori: e.category, nominal: e.actual, keterangan: `${e.name}` }) });
-        for (const s of monthlySavings) if (s.goalId && s.actual) { 
-            const g = savingsGoals.find(x => x.id == s.goalId); 
-            if (g) { 
-                await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ tanggal: new Date().toISOString().split('T')[0], pengguna: currentUser, jenis: 'Tabungan', kategori: 'Tabungan', nominal: s.actual, keterangan: `Target: ${g.name}` }) }); 
-                g.collected = (Number(g.collected)||0) + Number(s.actual); 
-            } 
+    const renderSavings = () => { 
+        const el = document.getElementById('savings-list'); 
+        if(el) el.innerHTML = savingsGoals.map(g => `<div class="bg-white border p-4 rounded-2xl flex justify-between items-center shadow-sm"><h4 class="font-bold text-xs text-gray-700">${g.name.toUpperCase()}</h4><p class="text-[10px] font-extrabold text-emerald-600">${formatRp(g.target)}</p></div>`).join(''); 
+    };
+    
+    const renderYearly = () => { 
+        const el = document.getElementById('yearly-list'); 
+        if(el) el.innerHTML = yearlyPlans.map(p => `<div class="bg-white border p-4 rounded-2xl shadow-sm"><p class="text-[8px] font-bold text-emerald-600 uppercase mb-1">${p.category}</p><h4 class="font-extrabold text-xs text-gray-800">${p.name.toUpperCase()}</h4><p class="text-[10px] text-gray-400 font-bold">${formatRp(p.amount)} / BLN</p></div>`).join(''); 
+    };
+    const openYearlyModal = () => { 
+        const m = document.getElementById('modal-yearly'); 
+        if(m) {
+            m.classList.remove('hidden'); 
+            const catSel = document.getElementById('year-category');
+            if(catSel) catSel.innerHTML = categoriesList.map(c=>`<option value="${c}">${c}</option>`).join(''); 
+            renderYearlyMonthsSelector(); 
         }
-        
-        saveSavingsData(true);
-        showToast('✅ Berhasil Tersimpan!');
-        renderDashboard(); // Update dashboard setelah simpan
-      } catch (e) { showToast('❌ Gagal.'); }
     };
-
-    const downloadReport = async () => {
-      showToast('⏳ Menyiapkan...');
-      const r = document.createElement('div'); r.className = 'bg-white p-6 w-[400px] fixed top-0 -left-[2000px] rounded-2xl';
-      r.innerHTML = `<div class="bg-emerald-600 rounded-xl p-5 text-white mb-5 text-center font-bold">Laporan Bulanan</div><div class="flex justify-between border-b py-2"><span class="text-gray-500">Saldo+Masuk</span><span class="font-bold text-emerald-600">${document.getElementById('total-tersedia').innerText}</span></div><div class="flex justify-between border-b py-2"><span class="text-gray-500">Terpakai</span><span class="font-bold text-red-500">${document.getElementById('total-aktual').innerText}</span></div><div class="flex justify-between py-4 text-xl"><span class="font-bold text-gray-800">SISA</span><span class="font-bold text-emerald-600">${document.getElementById('total-sisa').innerText}</span></div>`;
-      document.body.appendChild(r); const c = await html2canvas(r, { scale: 2 }); document.body.removeChild(r); const l = document.createElement('a'); l.download = 'Laporan.png'; l.href = c.toDataURL(); l.click(); showToast('✅ Diunduh!');
+    const renderYearlyMonthsSelector = () => { 
+        const grid = document.getElementById('year-months-grid');
+        if(grid) grid.innerHTML = monthShort.map((m, i) => `<button onclick="toggleYM(${i})" id="ym-${i}" class="py-2 rounded-lg text-[9px] font-bold bg-gray-100 transition-colors">${m}</button>`).join(''); 
+    };
+    const toggleYM = (i) => { 
+        const b = document.getElementById(`ym-${i}`); 
+        if(selectedYearlyMonths.includes(i)){
+            selectedYearlyMonths = selectedYearlyMonths.filter(x=>x!==i); 
+            if(b) b.className = "py-2 rounded-lg text-[9px] font-bold bg-gray-100";
+        } else {
+            selectedYearlyMonths.push(i); 
+            if(b) b.className = "py-2 rounded-lg text-[9px] font-bold bg-emerald-500 text-white shadow-sm";
+        } 
+    };
+    const saveYearly = () => { 
+        const n = document.getElementById('year-name')?.value; 
+        const c = document.getElementById('year-category')?.value; 
+        const a = Number(document.getElementById('year-amount')?.value); 
+        if(!n||a<=0||selectedYearlyMonths.length===0) return; 
+        yearlyPlans.push({id:Date.now(), name:n, category:c, amount:a, months:selectedYearlyMonths.sort((x,y)=>x-y)}); 
+        renderYearly(); 
+        closeModal('modal-yearly'); 
+    };
+    const saveYearlyData = async () => { 
+        showToast('⏳ Sync Cloud...'); 
+        try{ 
+            await fetch(SCRIPT_URL, {method:'POST',mode:'no-cors',body:JSON.stringify({action:'saveYearly',plans:yearlyPlans})}); 
+            localStorage.setItem('yearlyPlansData', JSON.stringify(yearlyPlans)); 
+            showToast('✅ Sinkron Selesai!'); 
+        }catch(e){ showToast('❌ Gagal Cloud'); } 
     };
 
     const performSearch = () => {
       const q = document.getElementById('search-input')?.value.toLowerCase();
-      if (!q || q.length < 2) { document.getElementById('search-results').innerHTML = '<p class="text-center text-gray-400 text-xs mt-8">Ketik untuk mencari...</p>'; return; }
-      const dh = JSON.parse(localStorage.getItem('detailedHistoryObj') || '{}');
-      let f = []; 
-      Object.keys(dh).forEach(k => { 
-          const [y,m] = k.split('_'); 
-          (dh[k].expenses||[]).forEach(i => { if(i.name.toLowerCase().includes(q)) f.push({...i, ms:`${monthNames[m]} ${y}`}); }); 
-      });
-      document.getElementById('search-results').innerHTML = f.map(i => `<div class="bg-white border rounded-xl p-3 flex justify-between items-center shadow-sm"><div class="flex-1"><p class="text-[9px] font-bold text-blue-500 uppercase">${i.ms}</p><h4 class="font-bold text-gray-800 text-sm">${i.name}</h4></div><div class="font-extrabold text-red-500 text-sm">${formatRp(i.actual)}</div></div>`).join('');
+      const resultsDiv = document.getElementById('search-results');
+      if (!q || q.length < 2) { if(resultsDiv) resultsDiv.innerHTML = '<p class="text-center text-gray-400 text-[10px] mt-8 font-bold uppercase">Ketik untuk mencari riwayat...</p>'; return; }
+      
+      const history = JSON.parse(localStorage.getItem('monthlyHistory') || '{}');
+      // Untuk pencarian lebih detail perlu InputData dari cloud, sementara cari di histori lokal bulan
+      let found = [];
+      // (Logika pencarian sederhana berdasarkan bulan yang ada di histori)
+      if(resultsDiv) resultsDiv.innerHTML = '<p class="text-center text-gray-400 text-[10px] mt-8 font-bold uppercase tracking-widest">Fitur pencarian cloud segera hadir.</p>';
     };
-
-    const renderSavings = () => {
-      const list = document.getElementById('savings-list');
-      if(list) list.innerHTML = savingsGoals.map(g => {
-        const p = g.target > 0 ? Math.min((g.collected/g.target)*100, 100) : 0;
-        return `<div class="bg-white border border-gray-100 rounded-2xl p-4 card-shadow"><div class="flex justify-between items-start mb-3"><div><h4 class="font-extrabold text-gray-800 text-sm">${g.name}</h4><p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Target: ${formatRp(g.target)}</p></div><button onclick="delS(${g.id})" class="text-gray-300">✖</button></div><div class="h-2 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-emerald-500" style="width: ${p}%"></div></div><div class="flex justify-between mt-2 text-[10px] font-bold text-emerald-600"><span>${p.toFixed(1)}%</span><span>${formatRp(g.collected)}</span></div></div>`;
-      }).join('');
-    };
-
-    const saveSavings = () => { const n=document.getElementById('sav-name').value, t=Number(document.getElementById('sav-target').value), c=Number(document.getElementById('sav-collected').value)||0; if(!n||t<=0) return; savingsGoals.push({id:Date.now(), name:n, target:t, collected:c}); renderSavings(); closeModal('modal-savings'); saveSavingsData(); };
-    const delS = (id) => { if(confirm('Hapus?')){ savingsGoals=savingsGoals.filter(g=>g.id!==id); renderSavings(); saveSavingsData(); } };
-    
-    const renderYearly = () => {
-      const list = document.getElementById('yearly-list');
-      if(list) list.innerHTML = yearlyPlans.map(p => {
-        const mh = monthShort.map((n, i) => `<div class="text-[8px] font-bold p-1 rounded text-center ${p.months.includes(i)?'bg-emerald-500 text-white shadow-sm':'bg-gray-100 text-gray-300'}">${n}</div>`).join('');
-        return `<div class="bg-white border rounded-2xl p-4 card-shadow"><div class="flex justify-between items-start mb-2"><div><p class="text-[8px] font-bold text-emerald-600 uppercase mb-1">${p.category}</p><h4 class="font-extrabold text-gray-800 text-sm">${p.name}</h4></div><button onclick="delY(${p.id})" class="text-gray-300">✖</button></div><div class="grid grid-cols-6 gap-1">${mh}</div><div class="mt-3 flex justify-between items-center text-[10px] font-bold"><span class="text-gray-400 uppercase">Per Bulan</span><span class="text-gray-800">${formatRp(p.amount)}</span></div></div>`;
-      }).join('');
-    };
-
-    const saveYearly = () => { const n=document.getElementById('year-name').value, c=document.getElementById('year-category').value, a=Number(document.getElementById('year-amount').value); if(!n||a<=0||selectedYearlyMonths.length===0) return; yearlyPlans.push({id:Date.now(), name:n, category:c, amount:a, months:selectedYearlyMonths.sort((x,y)=>x-y)}); renderYearly(); closeModal('modal-yearly'); };
-    const delY = (id) => { if(confirm('Hapus?')){ yearlyPlans=yearlyPlans.filter(p=>p.id!==id); renderYearly(); } };
-    const toggleYM = (i) => { if(selectedYearlyMonths.includes(i)) selectedYearlyMonths=selectedYearlyMonths.filter(x=>x!==i); else selectedYearlyMonths.push(i); renderYearlyMonthsSelector(); };
-    const renderYearlyMonthsSelector = () => { const grid = document.getElementById('year-months-grid'); if(grid) grid.innerHTML = monthShort.map((m, i) => `<button onclick="toggleYM(${i})" class="py-2 rounded-lg text-[10px] font-bold ${selectedYearlyMonths.includes(i)?'bg-emerald-500 text-white shadow-md':'bg-gray-100 text-gray-400'}">${m}</button>`).join(''); };
-    
-    const openYearlyModal = () => { const m = document.getElementById('modal-yearly'); if(m) { m.classList.remove('hidden'); document.getElementById('year-category').innerHTML=categoriesList.map(c=>`<option value="${c}">${c}</option>`).join(''); selectedYearlyMonths=[]; renderYearlyMonthsSelector(); } };
-    const openSavingsModal = () => { const m = document.getElementById('modal-savings'); if(m) m.classList.remove('hidden'); };
-    
-    const saveYearlyData = async () => { showToast('⏳ Syncing...'); try { await fetch(SCRIPT_URL, {method:'POST',mode:'no-cors',body:JSON.stringify({action:'saveYearly',plans:yearlyPlans})}); localStorage.setItem('yearlyPlansData', JSON.stringify(yearlyPlans)); showToast('✅ Cloud Sync!'); } catch(e){} };
-    const saveSavingsData = async (s=false) => { if(!s)showToast('⏳ Saving...'); try { await fetch(SCRIPT_URL, {method:'POST',mode:'no-cors',body:JSON.stringify({action:'saveSavings',savings:savingsGoals})}); localStorage.setItem('savingsData', JSON.stringify(savingsGoals)); if(!s)showToast('✅ Saved!'); } catch(e){} };
-    const loadYearlyFromCloud = async () => { try { const r=await fetch(SCRIPT_URL+'?action=getYearly'); const d=await r.json(); if(d && d.length>0){yearlyPlans=d;localStorage.setItem('yearlyPlansData',JSON.stringify(yearlyPlans));renderYearly();updatePlanDropdown();} } catch(e){} };
-    const loadSavingsFromCloud = async () => { try { const r=await fetch(SCRIPT_URL+'?action=getSavings'); const d=await r.json(); if(d && d.length>0){savingsGoals=d;localStorage.setItem('savingsData',JSON.stringify(savingsGoals));renderSavings();} } catch(e){} };
 
     window.onload = () => {
       const ms = document.getElementById('select-month'), ys = document.getElementById('select-year'), n = new Date();
@@ -545,9 +535,7 @@
         [n.getFullYear()-1, n.getFullYear(), n.getFullYear()+1].forEach(y => yH += `<option value="${y}" ${y === n.getFullYear() ? 'selected' : ''}>${y}</option>`);
         ms.innerHTML = mH; ys.innerHTML = yH;
       }
-      handleMonthChange(); // Load data bulan ini
-      renderDashboard(); updatePlanDropdown(); renderSavings(); renderYearly();
-      loadYearlyFromCloud(); loadSavingsFromCloud();
+      setCurrentUser('Suami'); renderSavings(); renderYearly(); fetchActualsFromCloud();
     };
   </script>
 </body>
