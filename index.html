@@ -36,6 +36,56 @@
     .tx-item.removing { max-height: 0 !important; opacity: 0; padding: 0; margin: 0; }
     .tx-delete-btn { transition: opacity 0.15s; }
     .tx-delete-btn:active { transform: scale(0.9); }
+
+    /* ===== SWIPE TAB ===== */
+    #swipe-container { touch-action: pan-y; }
+    .page-content { transition: opacity 0.18s ease; }
+
+    /* ===== FAB ===== */
+    #fab {
+      position: fixed; bottom: 24px; right: 50%;
+      transform: translateX(calc(50% - 16px));
+      width: 56px; height: 56px; border-radius: 50%;
+      background: linear-gradient(135deg, #059669, #10b981);
+      box-shadow: 0 4px 20px rgba(5,150,105,0.45);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 40; transition: transform 0.15s ease, box-shadow 0.15s ease;
+      max-width: 448px; /* stays inside max-w-md */
+    }
+    #fab:active { transform: translateX(calc(50% - 16px)) scale(0.92); box-shadow: 0 2px 10px rgba(5,150,105,0.3); }
+    #fab.open { transform: translateX(calc(50% - 16px)) rotate(45deg); }
+    /* Only show FAB on bulanan tab */
+    body:not(.tab-monthly) #fab { display: none; }
+
+    /* ===== BOTTOM SHEET ===== */
+    #bottom-sheet-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(4px); z-index: 48;
+      opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+    }
+    #bottom-sheet-overlay.open { opacity: 1; pointer-events: auto; }
+    #bottom-sheet {
+      position: fixed; bottom: 0; left: 50%; width: 100%; max-width: 448px;
+      transform: translate(-50%, 100%);
+      background: #fff; border-radius: 24px 24px 0 0;
+      padding: 0 0 env(safe-area-inset-bottom,0);
+      box-shadow: 0 -8px 40px rgba(0,0,0,0.18);
+      z-index: 49; transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+    }
+    #bottom-sheet.open { transform: translate(-50%, 0); }
+    .bs-handle { width: 36px; height: 4px; border-radius: 2px; background: #e5e7eb; margin: 12px auto 0; }
+
+    /* ===== CATATAN BULAN ===== */
+    .note-bubble {
+      position: relative; border-radius: 16px 16px 16px 4px;
+      padding: 10px 14px; max-width: 85%;
+      font-size: 12px; line-height: 1.55; font-weight: 500;
+    }
+    .note-bubble.suami { background: #ecfdf5; color: #065f46; border-radius: 16px 16px 16px 4px; }
+    .note-bubble.istri  { background: #fdf2f8; color: #831843; border-radius: 16px 16px 4px 16px; align-self: flex-end; }
+    .note-meta { font-size: 9px; font-weight: 700; opacity: 0.55; margin-top: 3px; }
+    @keyframes slideUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    .note-in { animation: slideUp 0.2s ease forwards; }
   </style>
 </head>
 <body class="h-screen flex flex-col max-w-md mx-auto relative shadow-2xl overflow-hidden bg-gray-50">
@@ -63,7 +113,7 @@
     <button onclick="switchTab('yearly')" class="tab-btn flex-1 py-3 rounded-xl text-xs font-bold transition-all bg-gray-100 text-gray-500" data-tab="yearly">📅 PLAN</button>
   </nav>
 
-  <main class="flex-1 overflow-y-auto scroll-hide p-4 pb-24 relative">
+  <main id="swipe-container" class="flex-1 overflow-y-auto scroll-hide p-4 pb-32 relative">
 
     <!-- ==================== DASHBOARD ==================== -->
     <div id="page-dashboard" class="page-content animate-fade-in space-y-4">
@@ -131,24 +181,6 @@
         </div>
       </div>
 
-      <!-- Input Cepat -->
-      <div class="bg-emerald-600 rounded-2xl p-5 text-white shadow-xl">
-        <h3 class="font-extrabold text-[10px] mb-3 uppercase tracking-widest">🖊️ Input Pengeluaran Cepat</h3>
-        <div class="space-y-3">
-          <select id="quick-category" class="w-full p-3 bg-emerald-700 border-none rounded-xl text-xs font-bold text-white outline-none">
-            <option value="" disabled selected>Pilih Rencana atau Kategori...</option>
-            <optgroup label="Rencana Plan" id="opt-rencana"></optgroup>
-            <optgroup label="Target Tabungan" id="opt-tabungan"></optgroup>
-            <optgroup label="Kategori Umum" id="opt-lainnya"></optgroup>
-          </select>
-          <input type="text" id="quick-keterangan" placeholder="Keterangan (opsional, mis: makan siang)" class="w-full p-3 bg-emerald-700 rounded-xl text-xs font-semibold text-white placeholder-emerald-300 outline-none">
-          <div class="flex gap-2">
-            <input type="number" id="quick-nominal" placeholder="Nominal Rp" class="flex-[2] p-3 bg-white rounded-xl text-gray-800 font-extrabold text-sm outline-none">
-            <button onclick="submitTransaction()" class="flex-1 bg-yellow-400 text-emerald-900 font-extrabold rounded-xl shadow active:scale-95 transition-all text-xs">SIMPAN</button>
-          </div>
-        </div>
-      </div>
-
       <!-- Monitor Plan -->
       <div class="bg-white rounded-2xl p-5 card-shadow">
         <div class="flex justify-between items-center mb-4">
@@ -180,11 +212,37 @@
       </div>
       <!-- ========== END RIWAYAT ========== -->
 
-      <div class="flex gap-2">
+      <!-- ========== CATATAN BULAN ========== -->
+      <div class="bg-white rounded-2xl card-shadow overflow-hidden">
+        <div class="flex justify-between items-center px-5 pt-5 pb-3 border-b border-gray-50">
+          <h3 class="font-extrabold text-gray-600 text-[10px] uppercase tracking-widest">💬 Catatan Bulan Ini</h3>
+          <span id="note-sync-label" class="text-[9px] font-bold text-gray-300"></span>
+        </div>
+        <!-- Bubble notes -->
+        <div id="notes-list" class="flex flex-col gap-2 px-4 py-3 min-h-[60px]">
+          <p class="text-center text-[10px] text-gray-300 font-bold py-2">Belum ada catatan</p>
+        </div>
+        <!-- Input catatan baru -->
+        <div class="border-t border-gray-100 px-4 py-3 flex gap-2 items-end">
+          <textarea id="note-input" rows="1" placeholder="Tulis catatan untuk bulan ini..."
+            oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
+            class="flex-1 resize-none bg-gray-50 border border-gray-200 rounded-2xl px-4 py-2.5 text-xs font-semibold text-gray-700 outline-none leading-relaxed placeholder-gray-300"></textarea>
+          <button onclick="submitNote()"
+            class="w-9 h-9 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform shadow-sm">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <!-- ========== END CATATAN ========== -->
+
+      <div class="flex gap-2 pb-2">
         <button onclick="downloadReport()" class="flex-1 bg-white border-2 border-gray-200 text-gray-600 py-4 rounded-2xl text-xs font-bold flex items-center justify-center gap-1">📸 Foto</button>
         <button onclick="handleSaveMonthly()" class="flex-[3] bg-emerald-600 text-white py-4 rounded-2xl text-lg font-extrabold shadow-lg">💾 Simpan Kas</button>
       </div>
-    </div>
+
+    </div><!-- /page-monthly -->
 
     <!-- ==================== TARGET TABUNGAN ==================== -->
     <div id="page-savings" class="page-content hidden animate-fade-in space-y-4">
@@ -210,6 +268,48 @@
     </div>
 
   </main>
+
+  <!-- ===== FAB ===== -->
+  <button id="fab" onclick="toggleBottomSheet()" aria-label="Input pengeluaran">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+  </button>
+
+  <!-- ===== BOTTOM SHEET OVERLAY ===== -->
+  <div id="bottom-sheet-overlay" onclick="closeBottomSheet()"></div>
+
+  <!-- ===== BOTTOM SHEET: INPUT PENGELUARAN ===== -->
+  <div id="bottom-sheet">
+    <div class="bs-handle"></div>
+    <div class="px-5 pt-4 pb-2 flex justify-between items-center">
+      <h3 class="text-sm font-extrabold text-gray-800">🖊️ Input Pengeluaran</h3>
+      <button onclick="closeBottomSheet()" class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="px-5 pb-6 space-y-3">
+      <select id="quick-category" class="w-full p-3.5 border border-gray-200 rounded-2xl text-sm font-bold text-gray-700 bg-gray-50 outline-none">
+        <option value="" disabled selected>Pilih Rencana atau Kategori...</option>
+        <optgroup label="Rencana Plan" id="opt-rencana"></optgroup>
+        <optgroup label="Target Tabungan" id="opt-tabungan"></optgroup>
+        <optgroup label="Kategori Umum" id="opt-lainnya"></optgroup>
+      </select>
+      <input type="text" id="quick-keterangan" placeholder="Keterangan (mis: makan siang, bensin motor)"
+        class="w-full p-3.5 border border-gray-200 rounded-2xl text-sm font-semibold text-gray-700 bg-gray-50 outline-none placeholder-gray-300">
+      <div class="flex gap-3">
+        <div class="flex-1 relative">
+          <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-extrabold text-gray-400">Rp</span>
+          <input type="number" id="quick-nominal" placeholder="0"
+            class="w-full pl-10 pr-4 py-3.5 border border-gray-200 rounded-2xl text-sm font-extrabold text-gray-800 bg-gray-50 outline-none">
+        </div>
+        <button onclick="submitTransaction()"
+          class="px-6 bg-emerald-500 text-white font-extrabold rounded-2xl shadow-md active:scale-95 transition-all text-sm">
+          SIMPAN
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- Toast -->
   <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-5 py-3 rounded-full shadow-2xl text-xs font-bold z-[60] animate-toast">
@@ -326,10 +426,13 @@
     let pendingDelete     = null; // { rowIndex, kategori, nominal, jenis, elId }
 
     // State edit & hapus savings/plan
-    let editingSavingsId      = null; // id savings yang sedang diedit (null = tambah baru)
-    let editingPlanId         = null; // id plan yang sedang diedit (null = tambah baru)
+    let editingSavingsId      = null;
+    let editingPlanId         = null;
     let pendingDeleteSavingsId = null;
     let pendingDeletePlanId    = null;
+
+    // State catatan bulan
+    let notesCache = {}; // key: "year_month", value: [{pengguna, teks, waktu}]
 
     // ============================================================
     //  UTILITIES
@@ -345,6 +448,143 @@
     };
 
     const closeModal = (id) => document.getElementById(id)?.classList.add('hidden');
+
+    // ============================================================
+    //  SWIPE ANTAR TAB
+    // ============================================================
+    const tabOrder = ['dashboard','monthly','savings','yearly'];
+    let swipeStartX = 0, swipeStartY = 0, swipeLocked = false;
+    const swipeEl = document.getElementById('swipe-container');
+    if (swipeEl) {
+      swipeEl.addEventListener('touchstart', e => {
+        swipeStartX = e.touches[0].clientX;
+        swipeStartY = e.touches[0].clientY;
+        swipeLocked = false;
+      }, { passive: true });
+      swipeEl.addEventListener('touchend', e => {
+        if (swipeLocked) return;
+        const dx = e.changedTouches[0].clientX - swipeStartX;
+        const dy = e.changedTouches[0].clientY - swipeStartY;
+        if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return; // bukan swipe horizontal
+        const active = document.querySelector('.tab-btn.bg-gradient-to-br')?.dataset?.tab || 'dashboard';
+        const idx    = tabOrder.indexOf(active);
+        if (dx < 0 && idx < tabOrder.length - 1) switchTab(tabOrder[idx + 1]); // swipe kiri → tab berikut
+        if (dx > 0 && idx > 0)                    switchTab(tabOrder[idx - 1]); // swipe kanan → tab sebelum
+      }, { passive: true });
+      swipeEl.addEventListener('touchmove', e => {
+        const dy = Math.abs(e.touches[0].clientY - swipeStartY);
+        const dx = Math.abs(e.touches[0].clientX - swipeStartX);
+        if (dy > dx) swipeLocked = true; // scroll vertikal — jangan hijack
+      }, { passive: true });
+    }
+
+    // ============================================================
+    //  FAB & BOTTOM SHEET
+    // ============================================================
+    const toggleBottomSheet = () => {
+      const bs  = document.getElementById('bottom-sheet');
+      const ov  = document.getElementById('bottom-sheet-overlay');
+      const fab = document.getElementById('fab');
+      const isOpen = bs.classList.contains('open');
+      if (isOpen) { closeBottomSheet(); } else {
+        bs.classList.add('open'); ov.classList.add('open'); fab.classList.add('open');
+        // Fokus ke nominal supaya keyboard langsung muncul
+        setTimeout(() => document.getElementById('quick-nominal')?.focus(), 320);
+      }
+    };
+    const closeBottomSheet = () => {
+      document.getElementById('bottom-sheet')?.classList.remove('open');
+      document.getElementById('bottom-sheet-overlay')?.classList.remove('open');
+      document.getElementById('fab')?.classList.remove('open');
+    };
+
+    // Tutup bottom sheet saat tekan Escape
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeBottomSheet(); });
+
+    // ============================================================
+    //  CATATAN BULAN — render, submit, cloud sync
+    // ============================================================
+    const renderNotes = () => {
+      const m   = document.getElementById('select-month')?.value;
+      const y   = document.getElementById('select-year')?.value;
+      const key = `${y}_${m}`;
+      const el  = document.getElementById('notes-list');
+      if (!el) return;
+
+      const notes = notesCache[key] || [];
+      if (!notes.length) {
+        el.innerHTML = '<p class="text-center text-[10px] text-gray-300 font-bold py-3">Belum ada catatan bulan ini</p>';
+        return;
+      }
+      el.innerHTML = notes.map(n => {
+        const isSuami = n.pengguna === 'Suami';
+        const align   = isSuami ? 'items-start' : 'items-end';
+        const cls     = isSuami ? 'suami' : 'istri';
+        const avatar  = isSuami ? '👨🏻' : '👩🏻';
+        return `
+          <div class="flex flex-col ${align} note-in">
+            <div class="note-bubble ${cls}">
+              <span class="text-[11px]">${avatar} </span>${escHtml(n.teks)}
+              <p class="note-meta">${n.pengguna} · ${n.waktu}</p>
+            </div>
+          </div>`;
+      }).join('');
+      // Scroll ke bawah
+      el.scrollTop = el.scrollHeight;
+    };
+
+    const escHtml = (s) => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+    const submitNote = async () => {
+      const input = document.getElementById('note-input');
+      const teks  = input?.value?.trim();
+      if (!teks) return;
+
+      const m   = document.getElementById('select-month')?.value;
+      const y   = document.getElementById('select-year')?.value;
+      const key = `${y}_${m}`;
+      const now = new Date();
+      const waktu = now.toLocaleString('id-ID', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+
+      // Optimistic
+      if (!notesCache[key]) notesCache[key] = [];
+      notesCache[key].push({ pengguna: currentUser, teks, waktu });
+      input.value = '';
+      input.style.height = 'auto';
+      renderNotes();
+
+      // Simpan lokal
+      localStorage.setItem(`notes_${key}`, JSON.stringify(notesCache[key]));
+
+      // Sync ke cloud
+      const noteSyncLabel = document.getElementById('note-sync-label');
+      if (noteSyncLabel) noteSyncLabel.innerText = 'Menyimpan...';
+      try {
+        await cloudPost({ action: 'saveNotes', tahun: y, bulan: m, notes: notesCache[key] });
+        if (noteSyncLabel) noteSyncLabel.innerText = '✓ Tersinkron';
+        setTimeout(() => { if (noteSyncLabel) noteSyncLabel.innerText = ''; }, 2000);
+      } catch(e) {
+        if (noteSyncLabel) noteSyncLabel.innerText = 'Lokal saja';
+      }
+    };
+
+    const fetchNotesFromCloud = async () => {
+      const m   = document.getElementById('select-month')?.value;
+      const y   = document.getElementById('select-year')?.value;
+      const key = `${y}_${m}`;
+      try {
+        const data = await cloudGet(`action=getNotes&year=${y}&month=${m}`);
+        if (Array.isArray(data)) {
+          notesCache[key] = data;
+          localStorage.setItem(`notes_${key}`, JSON.stringify(data));
+        }
+      } catch(e) {
+        // fallback localStorage
+        const cached = localStorage.getItem(`notes_${key}`);
+        if (cached) notesCache[key] = JSON.parse(cached);
+      }
+      renderNotes();
+    };
 
     const setSyncStatus = (status) => {
       const dot = document.getElementById('sync-dot'), label = document.getElementById('sync-label');
@@ -394,6 +634,11 @@
           ? 'tab-btn flex-1 py-3 rounded-xl text-xs font-bold transition-all bg-gradient-to-br from-emerald-600 to-emerald-500 text-white shadow-md'
           : 'tab-btn flex-1 py-3 rounded-xl text-xs font-bold transition-all bg-gray-100 text-gray-500';
       });
+      // FAB hanya tampil di tab Bulanan
+      document.body.className = id === 'monthly' ? 'h-screen flex flex-col max-w-md mx-auto relative shadow-2xl overflow-hidden bg-gray-50 tab-monthly'
+                                                  : 'h-screen flex flex-col max-w-md mx-auto relative shadow-2xl overflow-hidden bg-gray-50';
+      // Tutup bottom sheet saat pindah tab
+      closeBottomSheet();
       if (id === 'dashboard') renderDashboard();
     };
 
@@ -589,7 +834,7 @@
     // ============================================================
     const refreshAll = async () => {
       await fetchActualsFromCloud();
-      await fetchTransactionsFromCloud();
+      await Promise.all([fetchTransactionsFromCloud(), fetchNotesFromCloud()]);
     };
 
     // ============================================================
@@ -612,14 +857,20 @@
       if (inPem)   inPem.value   = ci.pemasukan || cached.pem   || '';
       calculateMonthly();
 
-      // Reset riwayat sebelum load baru
+      // Reset riwayat & catatan sebelum load baru
       transactionsCache = [];
       document.getElementById('tx-skeleton').classList.remove('hidden');
       document.getElementById('tx-list').classList.add('hidden');
 
+      // Tampilkan catatan dari localStorage dulu agar tidak blank
+      const noteKey = `${y}_${m}`;
+      const localNotes = localStorage.getItem(`notes_${noteKey}`);
+      if (localNotes) { notesCache[noteKey] = JSON.parse(localNotes); renderNotes(); }
+
       await Promise.all([
         fetchActualsFromCloud(),
-        fetchTransactionsFromCloud()
+        fetchTransactionsFromCloud(),
+        fetchNotesFromCloud()
       ]);
     };
 
@@ -1116,13 +1367,16 @@
       }
       setCurrentUser('Suami');
       renderSavings(); renderYearly();
+      // Set body class untuk FAB (default mulai di dashboard, pindah ke monthly nanti user swipe/tap)
+      document.body.classList.remove('tab-monthly');
 
       await Promise.all([loadMasterDataFromCloud(), handleMonthChange()]);
 
-      // Auto-polling: aktual + riwayat tiap 15 detik
+      // Auto-polling: aktual + riwayat + catatan tiap 15 detik
       setInterval(() => {
         fetchActualsFromCloud(true);
         fetchTransactionsFromCloud();
+        fetchNotesFromCloud();
       }, POLLING_INTERVAL_MS);
     };
   </script>
